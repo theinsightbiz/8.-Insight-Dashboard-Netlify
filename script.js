@@ -879,9 +879,3 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
   const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `CA-Tasks-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
 });
-
-/* ---------- Boot ---------- */
-document.addEventListener('DOMContentLoaded', ()=>{
-  render();        // initial render
-  startRealtime(); // attach RTDB listeners
-});
