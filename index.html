@@ -8,6 +8,42 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
+  
+  <!-- html2canvas + jsPDF for client-side PDF export -->
+  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"
+          onerror="window.__libErr = (window.__libErr||[]).concat('html2canvas load failed')"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"
+          onerror="window.__libErr = (window.__libErr||[]).concat('jsPDF load failed')"></script>
+
+  <!-- ✅ pdf.js (ESM) with dual-CDN fallback; exposes window.pdfjsLib and sets worker -->
+  <script type="module">
+    (async () => {
+      async function tryImport(from, ver="4.6.82") {
+        const base = `${from}/pdfjs-dist@${ver}/build`;
+        const pdf = await import(`${base}/pdf.min.mjs`);
+        // Expose globally for script.js
+        window.pdfjsLib = pdf;
+        // Worker must also be an ESM file
+        pdf.GlobalWorkerOptions.workerSrc = `${base}/pdf.worker.min.mjs`;
+        window.__pdfWorkerSet = true;
+      }
+      try {
+        await tryImport("https://unpkg.com");
+      } catch (e1) {
+        (window.__libErr = (window.__libErr||[])).push('pdf.js import failed (unpkg): ' + (e1 && e1.message));
+        try {
+          await tryImport("https://cdn.jsdelivr.net/npm");
+        } catch (e2) {
+          (window.__libErr = (window.__libErr||[])).push('pdf.js import failed (jsDelivr): ' + (e2 && e2.message));
+          window.__pdfWorkerSet = false;
+        }
+      }
+    })();
+  </script>
+
+  <!-- Tesseract.js for OCR fallback on image-only PDFs -->
+  <script defer src="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.0/dist/tesseract.min.js"
+          onerror="window.__libErr = (window.__libErr||[]).concat('tesseract.js load failed')"></script>
 </head>
 <body>
   <div class="container" id="appRoot">
@@ -205,6 +241,163 @@
           <button class="btn primary" type="submit" id="saveBtn">Save Task</button>
         </footer>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Create Invoice -->
+  <div class="modal" id="invoiceModal" role="dialog" aria-modal="true" aria-labelledby="invoiceModalTitle">
+    <div class="dialog">
+      <header><h2 id="invoiceModalTitle">Create Invoice</h2></header>
+      <form id="invoiceForm">
+        <div class="body">
+          <div class="dialog grid2">
+            <div><label>Invoice No.</label><input id="invNumber" required /></div>
+            <div><label>Invoice Date</label><input type="date" id="invDate" required /></div>
+            <div><label>Client Name</label><input id="invClient" required placeholder="Billed to / Receiver" /></div>
+            <div><label>Mobile No.</label><input id="invMobile" placeholder="+91…" /></div>
+            <div><label>Email</label><input id="invEmail" type="email" placeholder="client@example.com" /></div>
+            <div><label>Address</label><textarea id="invAddress" placeholder="Street, City, State, PIN"></textarea></div>
+          </div>
+
+          <div class="inv-services">
+            <div class="inv-services-head">
+              <h3>Service Lines</h3>
+              <div class="row-actions">
+                <button type="button" class="btn" id="addServiceRowBtn">➕ Add Row</button>
+                <button type="button" class="btn ghost" id="openEditInvoiceBtn" title="Upload an existing invoice PDF to edit">🖊️ Edit from PDF</button>
+              </div>
+            </div>
+            <div class="inv-grid-head">
+              <span>#</span><span>Description of Service</span><span class="money">Amount (₹)</span><span>—</span>
+            </div>
+            <div id="serviceRows"></div>
+            <div class="inv-totals">
+              <div class="tot-row"><span>Sub Total</span><span class="money">₹ <span id="subTotal">0</span></span></div>
+              <div class="tot-row"><label for="discountInput">Less: Discount</label><input id="discountInput" type="number" min="0" step="0.01" value="0"></div>
+              <div class="tot-row strong"><span>Invoice Amount</span><span class="money">₹ <span id="grandTotal">0</span></span></div>
+              <div class="tot-row words"><small>Amount (in words): <span id="amountWords">Zero Rupees only</span></small></div>
+            </div>
+          </div>
+
+          <!-- DEBUG PANEL -->
+          <details id="debugPanel" style="margin-top:12px; border:1px solid var(--line); border-radius:10px; padding:8px;">
+            <summary><strong>Debug Log</strong> (library status & last operation)</summary>
+            <div id="debugInfo" style="font-size:12px; color:var(--muted); white-space:pre-wrap;"></div>
+          </details>
+        </div>
+        <footer>
+          <button type="button" class="btn ghost" id="invoiceCancelBtn">Cancel</button>
+          <button type="button" class="btn" id="previewInvoiceBtn">Preview</button>
+          <button type="button" class="btn primary" id="downloadPdfBtn">Download PDF</button>
+        </footer>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Invoice (Upload PDF) -->
+  <div class="modal" id="editInvoiceModal" role="dialog" aria-modal="true" aria-labelledby="editInvoiceTitle">
+  <div class="dialog">
+    <header>
+      <h2 id="editInvoiceTitle">Edit Invoice – Upload Existing PDF</h2>
+    </header>
+    <div class="body">
+      <div class="edit-grid">
+        <div class="uploader" id="pdfDrop">
+          <input type="file" id="pdfInput" accept="application/pdf" />
+          <p><strong>Drop your invoice PDF here</strong> or click to select.</p>
+          <small>Tip: Use an invoice previously downloaded from this app for best results.</small>
+        </div>
+
+        <!-- ✅ Debug info section placed right after uploader -->
+        <div id="parseLog" class="parse-log" aria-live="polite"></div>
+        <details style="margin-top:8px;">
+          <summary>🔍 Debug Log</summary>
+          <pre id="debugInfo" style="background:#f9f9f9; padding:8px; border:1px solid #ddd; max-height:200px; overflow:auto;"></pre>
+        </details>
+        <!-- ✅ End Debug info -->
+      </div>
+    </div>
+    <footer>
+      <button type="button" class="btn ghost" id="editCancelBtn">Close</button>
+    </footer>
+  </div>
+</div>
+
+
+  <!-- Hidden A4 Invoice Template (render target for PDF) -->
+  <div id="invoiceA4" aria-hidden="true">
+    <div class="a4 page">
+      <div class="inv-letterhead">
+        <div class="lh-left">
+          <img src="logo.png" alt="Firm Logo">
+          <div class="lh-firm">
+            <div class="firm-name">INSIGHT BUSINESS CONSULTANCY</div>
+            <div class="firm-sub">A-272, Block A, Surajmal Vihar, New Delhi- 110092</div>
+            <div class="firm-sub">Mobile: 9953921244 • E-mail: contact@theinsightbiz.com</div>
+            <div class="firm-sub">PAN: AAKFI9556M</div>
+          </div>
+        </div>
+        <div class="lh-right">
+          <div class="tax-invoice">TAX INVOICE</div>
+          <div class="inv-meta">
+            <div><strong>Invoice No:</strong> <span data-bind="invNumber"></span></div>
+            <div><strong>Invoice Date:</strong> <span data-bind="invDateDDMM"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="inv-billto">
+        <div class="box-title">ORIGINAL FOR RECIPIENT</div>
+        <div class="bt-grid">
+          <div><strong>Detail of Receiver (Billed to Party)</strong></div>
+          <div><strong>Invoice Amount</strong></div>
+          <div>
+            <div><strong>Name:</strong> <span data-bind="client"></span></div>
+            <div><strong>Address:</strong> <span data-bind="address"></span></div>
+            <div><strong>E-mail:</strong> <span data-bind="email"></span></div>
+            <div><strong>Mobile No:</strong> <span data-bind="mobile"></span></div>
+          </div>
+          <div class="money big">₹ <span data-bind="grandTotal"></span></div>
+        </div>
+      </div>
+
+      <table class="inv-table">
+        <thead>
+          <tr><th style="width:40px">S. No.</th><th>Service Description</th><th style="width:160px" class="money">Amount (₹)</th></tr>
+        </thead>
+        <tbody data-bind="rows"></tbody>
+        <tfoot>
+          <tr><th colspan="2" class="right">Sub Total</th><th class="money">₹ <span data-bind="subTotal"></span></th></tr>
+          <tr><th colspan="2" class="right">Less: Discount</th><th class="money">₹ <span data-bind="discount"></span></th></tr>
+          <tr class="total"><th colspan="2" class="right">Invoice Amount</th><th class="money">₹ <span data-bind="grandTotal"></span></th></tr>
+          <tr><td colspan="3" class="words">Invoice Amount (in words): <strong><span data-bind="amountWords"></span></strong></td></tr>
+        </tfoot>
+      </table>
+
+      <div class="inv-banking">
+        <div class="box-title">Banking Details</div>
+        <div class="bank-grid">
+          <div><strong>Account Holder Name:</strong> Insight Business Consultancy</div>
+          <div><strong>Bank Name:</strong> IDFC First Bank</div>
+          <div><strong>Bank A/c:</strong> 101 9939 2303</div>
+          <div><strong>Bank IFSC:</strong> IDFB 0021 416</div>
+        </div>
+      </div>
+
+      <div class="inv-terms">
+        <div class="box-title">Terms &amp; Conditions</div>
+        <ol>
+          <li>Amounts must be paid within 03 days.</li>
+          <li>May deduct TDS @ 10% as per IT Act u/s 194J.</li>
+          <li>E &amp; O Expected.</li>
+        </ol>
+      </div>
+      <div class="inv-note">Note: This is a computer generated invoice and hence does not require a signature.</div>
+
+      <div class="inv-sign">
+        <div class="sign-name">Priyam Adarsh</div>
+        <div class="sign-title">Partner/ Authorised Signatory</div>
+      </div>
     </div>
   </div>
 
