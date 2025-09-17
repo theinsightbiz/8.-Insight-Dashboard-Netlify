@@ -266,3 +266,27 @@ select optgroup,
 #createInvoiceBtn:hover { background-color: #1976D2 !important; border-color: #1976D2 !important; }
 #bulkDeleteBtn:hover { background-color: #d32f2f !important; border-color: #d32f2f !important; }
 #exportCsvBtn:hover { background-color: #e68900 !important; border-color: #e68900 !important; }
+
+
+/* === Combobox styling (Client/Title) === */
+.combo-wrap{ position:relative; }
+.combo-input{
+  width:100%; border-radius:10px; border:1px solid var(--line);
+  background:var(--field); color:var(--text); padding:8px 10px; outline:none;
+}
+.combo-input:focus{ box-shadow:0 0 0 3px rgba(120,176,228,.30); }
+.combo-menu{
+  position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:9999;
+  background:var(--panel); border:1px solid var(--line); border-radius:12px;
+  box-shadow:var(--shadow); max-height:260px; overflow:auto; padding:6px;
+}
+.combo-item{
+  display:flex; align-items:center; gap:8px;
+  padding:8px 10px; border-radius:8px; cursor:pointer; user-select:none;
+  color:var(--text);
+}
+.combo-item[data-kind="add"]{ color:#bfe0ff; }
+.combo-item .match{ font-weight:700; }
+.combo-item[aria-selected="true"], .combo-item:hover{ background:rgba(120,176,228,.12); }
+.combo-empty{ padding:10px; color:var(--muted); }
+

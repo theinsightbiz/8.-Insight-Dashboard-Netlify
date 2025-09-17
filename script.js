@@ -1099,3 +1099,154 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
   const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = `CA-Tasks-${new Date().toISOString().slice(0,10)}.csv`; a.click(); URL.revokeObjectURL(a.href);
 });
+
+
+/* === Combobox for Client Name & Task Title === */
+(function(){
+  const $  = (sel, root=document)=> root.querySelector(sel);
+  const $$ = (sel, root=document)=> Array.from(root.querySelectorAll(sel));
+  const esc = (s)=> String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function getSelectValues(selectId){
+    const sel = document.getElementById(selectId);
+    if(!sel) return [];
+    const out = []; const seen = new Set();
+    for(const opt of sel.options){
+      const v = (opt.value||'').trim();
+      if(!v || v==='__new__') continue;
+      const n = v.toLowerCase();
+      if(!seen.has(n)){ seen.add(n); out.push(v); }
+    }
+    out.sort((a,b)=> a.localeCompare(b));
+    return out;
+  }
+
+  function createCombobox({ input, hidden, source, placeholder='' }){
+    if(!input || !hidden || typeof source!=='function') return null;
+    if(!input.classList.contains('combo-input')){
+      const wrap = document.createElement('div');
+      wrap.className = 'combo-wrap';
+      input.parentNode.insertBefore(wrap, input);
+      wrap.appendChild(input);
+      input.classList.add('combo-input');
+      if(placeholder) input.placeholder = placeholder;
+    }
+    let open=false, act=-1, menu=null, rows=[];
+
+    const close=()=>{ if(menu && menu.parentNode){ menu.parentNode.removeChild(menu); } menu=null; open=false; act=-1; };
+    const ensure=()=>{ if(menu) return menu; menu=document.createElement('div'); menu.className='combo-menu'; input.parentNode.appendChild(menu); open=true; return menu; };
+
+    const highlight=(text,q)=>{
+      if(!q) return esc(text);
+      const i = text.toLowerCase().indexOf(q.toLowerCase());
+      if(i<0) return esc(text);
+      const a=esc(text.slice(0,i)), b=esc(text.slice(i,i+q.length)), c=esc(text.slice(i+q.length));
+      return `${a}<span class="match">${b}</span>${c}`;
+    };
+
+    const render=(q)=>{
+      const all = source();
+      const query = (q||'').trim();
+      const qn = query.toLowerCase();
+      const list = !query ? all.slice(0,50) : all.filter(v=>v.toLowerCase().includes(qn)).slice(0,50);
+      const exact = query && all.some(v=>v.toLowerCase()===qn);
+      rows = [];
+      if(query && !exact) rows.push({kind:'add', value:query});
+      for(const v of list) rows.push({kind:'opt', value:v});
+      act = rows.length ? 0 : -1;
+      const m = ensure();
+      if(!rows.length){ m.innerHTML = `<div class="combo-empty">Type to search…</div>`; return; }
+      m.innerHTML = rows.map((r,i)=> r.kind==='add'
+        ? `<div class="combo-item" data-i="${i}" data-k="add">➕ Add “${esc(r.value)}”</div>`
+        : `<div class="combo-item" data-i="${i}" data-k="opt">${highlight(r.value, query)}</div>`).join('');
+      m.querySelectorAll('.combo-item').forEach(el=>{
+        el.addEventListener('mouseenter', ()=>{
+          m.querySelectorAll('.combo-item[aria-selected="true"]').forEach(n=>n.removeAttribute('aria-selected'));
+          el.setAttribute('aria-selected','true'); act = Number(el.dataset.i);
+        });
+        el.addEventListener('mousedown', (ev)=>{ ev.preventDefault(); commit(Number(el.dataset.i)); });
+      });
+    };
+
+    const commit=(i)=>{
+      if(i<0 || i>=rows.length) { close(); return; }
+      const r = rows[i];
+      const val = (r.kind==='add') ? (input.value||'').trim() : r.value;
+      input.value = val;
+      hidden.value = val;
+      close();
+    };
+
+    input.addEventListener('input', ()=>{ hidden.value = (input.value||'').trim(); render(input.value); });
+    input.addEventListener('focus', ()=>{ render(input.value); });
+    input.addEventListener('blur', ()=>{ setTimeout(close, 120); });
+    input.addEventListener('keydown', (e)=>{
+      if(!open && (e.key==='ArrowDown' || e.key==='ArrowUp')){ render(input.value); e.preventDefault(); return; }
+      if(!open) return;
+      const max = rows.length-1;
+      if(e.key==='ArrowDown'){ act = Math.min(max, act+1); update(); e.preventDefault(); }
+      else if(e.key==='ArrowUp'){ act = Math.max(0, act-1); update(); e.preventDefault(); }
+      else if(e.key==='Enter'){ commit(act); e.preventDefault(); }
+      else if(e.key==='Escape'){ close(); e.preventDefault(); }
+      else if(e.key==='Tab'){ if(act>=0) commit(act); else hidden.value = (input.value||'').trim(); }
+    });
+    function update(){
+      if(!menu) return;
+      menu.querySelectorAll('.combo-item').forEach(el=>el.removeAttribute('aria-selected'));
+      const el = menu.querySelector(`.combo-item[data-i="${act}"]`);
+      if(el){ el.setAttribute('aria-selected','true'); el.scrollIntoView({block:'nearest'}); }
+    }
+    return { refresh: ()=>render(input.value), setValue:(v)=>{ input.value=v||''; hidden.value=v||''; }, focus:()=> input.focus() };
+  }
+
+  function setupCombos(){
+    const cSel = document.getElementById('fClientSelect'); if(cSel) cSel.style.display='none';
+    const tSel = document.getElementById('fTitleSelect');  if(tSel) tSel.style.display='none';
+    const cInp = document.getElementById('fClientNew'); if(cInp) cInp.style.display='';
+    const tInp = document.getElementById('fTitleNew');  if(tInp) tInp.style.display='';
+    const clientCombo = createCombobox({
+      input: document.getElementById('fClientNew'),
+      hidden: document.getElementById('fClient'),
+      source: ()=> getSelectValues('fClientSelect'),
+      placeholder: 'Type client name…'
+    });
+    const titleCombo = createCombobox({
+      input: document.getElementById('fTitleNew'),
+      hidden: document.getElementById('fTitle'),
+      source: ()=> getSelectValues('fTitleSelect'),
+      placeholder: 'Type task title…'
+    });
+
+    const modal = document.getElementById('taskModal');
+    if(modal){
+      const obs = new MutationObserver(()=>{
+        if(!modal.classList.contains('active')) return;
+        const c = (document.getElementById('fClient')?.value || document.getElementById('fClientSelect')?.value || '').trim();
+        const t = (document.getElementById('fTitle')?.value  || document.getElementById('fTitleSelect')?.value  || '').trim();
+        clientCombo && clientCombo.setValue(c);
+        titleCombo  && titleCombo.setValue(t);
+        clientCombo && clientCombo.refresh();
+        titleCombo  && titleCombo.refresh();
+        setTimeout(()=> clientCombo && clientCombo.focus(), 20);
+      });
+      obs.observe(modal, { attributes:true, attributeFilter:['class'] });
+    }
+
+    const selObs = new MutationObserver(()=>{
+      clientCombo && clientCombo.refresh();
+      titleCombo  && titleCombo.refresh();
+    });
+    if(cSel) selObs.observe(cSel, { childList:true, subtree:true, attributes:true });
+    if(tSel) selObs.observe(tSel, { childList:true, subtree:true, attributes:true });
+
+    cInp && cInp.addEventListener('input', ()=>{ const h=document.getElementById('fClient'); if(h) h.value=(cInp.value||'').trim(); });
+    tInp && tInp.addEventListener('input', ()=>{ const h=document.getElementById('fTitle');  if(h) h.value=(tInp.value||'').trim(); });
+  }
+
+  if (document.readyState === 'loading'){
+    document.addEventListener('DOMContentLoaded', ()=>{ setupCombos(); setTimeout(setupCombos, 120); });
+  } else {
+    setupCombos(); setTimeout(setupCombos, 120);
+  }
+})();
+
