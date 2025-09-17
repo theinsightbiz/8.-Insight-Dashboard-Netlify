@@ -1332,4 +1332,33 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
   }
 })();
 
+/* ---------- expose helpers to remove options ---------- */
+  function removeOptionFromSelect(selectId, value){
+    const sel = document.getElementById(selectId);
+    if(!sel) return false;
+    const target = Array.from(sel.options).find(opt => opt.value.trim() === value.trim());
+    if(target){
+      sel.removeChild(target);
+      return true;
+    }
+    return false;
+  }
+
+  window.removeClientOption = function(value){
+    if(removeOptionFromSelect('fClientSelect', value)){
+      console.log('Removed client:', value);
+    } else {
+      console.warn('Client not found:', value);
+    }
+  };
+
+  window.removeTitleOption = function(value){
+    if(removeOptionFromSelect('fTitleSelect', value)){
+      console.log('Removed title:', value);
+    } else {
+      console.warn('Title not found:', value);
+    }
+  };
+})();
+
 
