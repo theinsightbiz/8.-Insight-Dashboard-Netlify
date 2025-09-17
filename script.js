@@ -19,6 +19,68 @@ function lastDayOfMonth(y,m){ return new Date(y, m+1, 0).getDate(); }
 function makeDateYMD(y,m,day){ const max=lastDayOfMonth(y,m); const d=Math.min(day,max); return new Date(y,m,d).toISOString().slice(0,10); }
 function prioRank(p){ return ({High:1, Medium:2, Low:3}[p]||9); }
 
+/* =========================
+   Task Title dropdown (select + custom)
+   ========================= */
+function getAllTitles(){
+  const seen = new Set(); const out = [];
+  for(const t of tasks){
+    const title = (t && t.title ? String(t.title).trim() : '');
+    if(title && !seen.has(title)){ seen.add(title); out.push(title); }
+  }
+  out.sort((a,b)=> a.localeCompare(b));
+  return out;
+}
+function refreshTitleOptions(){
+  const sel = document.getElementById('fTitleSelect');
+  if(!sel) return;
+  const cur = sel.value;
+  const titles = getAllTitles();
+  const opts = ['<option value="">Select Title</option>']
+    .concat(titles.map(t=>`<option value="${t.replace(/"/g,'&quot;')}">${t.replace(/</g,'&lt;')}</option>`))
+    .concat(['<option value="__new__">➕ New title…</option>']);
+  sel.innerHTML = opts.join('');
+  if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
+  toggleTitleCustom(sel.value);
+}
+function toggleTitleCustom(val){
+  const custom = document.getElementById('fTitleNew');
+  if(!custom) return;
+  custom.style.display = (val==='__new__') ? '' : 'none';
+}
+
+/* =========================
+   Client dropdown (select + custom)
+   ========================= */
+function getAllClients(){
+  const seen = new Set(); const out = [];
+  for(const t of tasks){
+    const client = (t && t.client ? String(t.client).trim() : '');
+    if(client && !seen.has(client)){ seen.add(client); out.push(client); }
+  }
+  out.sort((a,b)=> a.localeCompare(b));
+  return out;
+}
+function refreshClientOptions(){
+  const sel = document.getElementById('fClientSelect');
+  if(!sel) return;
+  const cur = sel.value;
+  const clients = getAllClients();
+  const opts = ['<option value="">Select Client</option>']
+    .concat(clients.map(c=>`<option value="${c.replace(/"/g,'&quot;')}">${c.replace(/</g,'&lt;')}</option>`))
+    .concat(['<option value="__new__">➕ New client…</option>']);
+  sel.innerHTML = opts.join('');
+  if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
+  toggleClientCustom(sel.value);
+}
+function toggleClientCustom(val){
+  const custom = document.getElementById('fClientNew');
+  if(!custom) return;
+  custom.style.display = (val==='__new__') ? '' : 'none';
+}
+
+
+
 /* ---------- Firebase Config (your real keys) ---------- */
 const firebaseConfig = {
   apiKey:        "AIzaSyCQ1rOpKAjinpAPF3iiMLKEkV22TxHp1bU",
@@ -233,6 +295,9 @@ function render(){
   $('#kpiOut') && ($('#kpiOut').textContent = fmtMoney(sumOut));
 
   updateSelectAllState();
+
+  try{ refreshTitleOptions(); }catch(e){}
+  try{ refreshClientOptions(); }catch(e){}
 }
 function formatMonthLabel(m){
   const [y, mo] = m.split('-').map(Number);
@@ -312,10 +377,56 @@ function openModal(title){
   if (modal) {
     $('#taskModalTitle') && ($('#taskModalTitle').textContent = title||'Task');
     modal.classList.add('active');
-    setTimeout(()=>$('#fClient')?.focus(), 20);
+    setTimeout(()=> (document.getElementById('fClientSelect')||document.getElementById('fClient'))?.focus(), 20);
   }
 }
 function closeModal(){ modal && modal.classList.remove('active'); }
+
+// Title select change -> show/hide custom input and keep hidden #fTitle in sync
+(function initTitleSelect(){
+  const sel = document.getElementById('fTitleSelect');
+  const hidden = document.getElementById('fTitle');
+  const custom = document.getElementById('fTitleNew');
+  if(!sel || !hidden || !custom) return;
+  sel.addEventListener('change', ()=>{
+    toggleTitleCustom(sel.value);
+    if(sel.value==='__new__'){
+      custom.focus();
+      hidden.value = (custom.value||'').trim();
+    } else {
+      hidden.value = (sel.value||'').trim();
+    }
+  });
+  custom.addEventListener('input', ()=>{
+    if(sel.value==='__new__'){
+      hidden.value = (custom.value||'').trim();
+    }
+  });
+})();
+
+// Client select change -> show/hide custom input and keep hidden #fClient in sync
+(function initClientSelect(){
+  const sel = document.getElementById('fClientSelect');
+  const hidden = document.getElementById('fClient');
+  const custom = document.getElementById('fClientNew');
+  if(!sel || !hidden || !custom) return;
+  sel.addEventListener('change', ()=>{
+    toggleClientCustom(sel.value);
+    if(sel.value==='__new__'){
+      custom.focus();
+      hidden.value = (custom.value||'').trim();
+    } else {
+      hidden.value = (sel.value||'').trim();
+    }
+  });
+  custom.addEventListener('input', ()=>{
+    if(sel.value==='__new__'){
+      hidden.value = (custom.value||'').trim();
+    }
+  });
+})();
+
+
 
 $('#addTaskBtn') && ($('#addTaskBtn').onclick = async ()=>{
   if (taskForm) {
@@ -326,6 +437,22 @@ $('#addTaskBtn') && ($('#addTaskBtn').onclick = async ()=>{
     try { await createTaskByPrompt(); }
     catch(e){ alert('Add failed: ' + (e?.message||e)); }
   }
+
+    try{
+      refreshTitleOptions();
+      const selT = document.getElementById('fTitleSelect'), newT = document.getElementById('fTitleNew'), hidT = document.getElementById('fTitle');
+      if(selT){ selT.value=''; toggleTitleCustom(selT.value); }
+      if(newT){ newT.value=''; }
+      if(hidT){ hidT.value=''; }
+    }catch(e){}
+
+    try{
+      refreshClientOptions();
+      const selC = document.getElementById('fClientSelect'), newC = document.getElementById('fClientNew'), hidC = document.getElementById('fClient');
+      if(selC){ selC.value=''; toggleClientCustom(selC.value); }
+      if(newC){ newC.value=''; }
+      if(hidC){ hidC.value=''; }
+    }catch(e){}
 });
 $('#cancelBtn') && ($('#cancelBtn').onclick = closeModal);
 modal && (modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); }));
@@ -335,8 +462,8 @@ function editTask(id){
   if (taskForm){
     openModal('Edit Task');
     taskForm.dataset.editId = id;
-    $('#fClient').value = t.client||'';
-    $('#fTitle').value = t.title||'';
+    /* client handled via select/custom */
+    /* title handled via select/custom */
     $('#fPriority').value = t.priority||'Medium';
     $('#fAssignee').value = t.assignee||'';
     $('#fStatus').value = t.status||'In Progress';
@@ -349,7 +476,38 @@ function editTask(id){
   } else {
     editTaskByPrompt(t);
   }
-}
+
+  // Populate title select/custom
+  try{
+    refreshTitleOptions();
+    (function(){
+      const sel = document.getElementById('fTitleSelect');
+      const custom = document.getElementById('fTitleNew');
+      const hidden = document.getElementById('fTitle');
+      const title = t.title||'';
+      if(sel && [...sel.options].some(o=>o.value===title)){
+        sel.value = title; toggleTitleCustom(sel.value); if(custom) custom.value=''; if(hidden) hidden.value=title;
+      } else if(sel){
+        sel.value='__new__'; toggleTitleCustom(sel.value); if(custom) custom.value=title; if(hidden) hidden.value=title;
+      }
+    })();
+  }catch(e){}
+
+  // Populate client select/custom
+  try{
+    refreshClientOptions();
+    (function(){
+      const sel = document.getElementById('fClientSelect');
+      const custom = document.getElementById('fClientNew');
+      const hidden = document.getElementById('fClient');
+      const client = t.client||'';
+      if(sel && [...sel.options].some(o=>o.value===client)){
+        sel.value = client; toggleClientCustom(sel.value); if(custom) custom.value=''; if(hidden) hidden.value=client;
+      } else if(sel){
+        sel.value='__new__'; toggleClientCustom(sel.value); if(custom) custom.value=client; if(hidden) hidden.value=client;
+      }
+    })();
+  }catch(e){}}
 window.editTask = editTask;
 
 async function changeInvoiceStatus(id, val){
@@ -364,6 +522,13 @@ window.changeInvoiceStatus = changeInvoiceStatus;
 
 if (taskForm) {
   taskForm.addEventListener('submit', async (e)=>{
+    // Ensure Title & Client from select/new
+    const _selT = document.getElementById('fTitleSelect'), _newT = document.getElementById('fTitleNew');
+    const _selC = document.getElementById('fClientSelect'), _newC = document.getElementById('fClientNew');
+    const _titleVal = _selT ? (_selT.value==='__new__' ? ((_newT && _newT.value.trim())||'') : (_selT.value||'').trim()) : (document.getElementById('fTitle')?.value||'').trim();
+    const _clientVal = _selC ? (_selC.value==='__new__' ? ((_newC && _newC.value.trim())||'') : (_selC.value||'').trim()) : (document.getElementById('fClient')?.value||'').trim();
+    if(!_titleVal){ e.preventDefault(); alert('Please select a Task Title or enter a new one.'); return; }
+    if(!_clientVal){ e.preventDefault(); alert('Please select a Client or enter a new one.'); return; }
     e.preventDefault();
     const editId = taskForm.dataset.editId;
     const existing = editId ? tasks.find(x=>x.id===editId) : null;
@@ -372,8 +537,8 @@ if (taskForm) {
     const dval = $('#fDeadline')?.value || '';
 
     const data = {
-      client: $('#fClient')?.value.trim() || '',
-      title: $('#fTitle')?.value.trim() || '',
+      client: _clientVal,
+      title: _titleVal,
       priority: $('#fPriority')?.value || 'Medium',
       assignee: $('#fAssignee')?.value.trim() || '',
       status: $('#fStatus')?.value || 'In Progress',
@@ -526,6 +691,7 @@ $('#bulkDeleteBtn')?.addEventListener('click', async ()=>{
 /* ---------- Boot ---------- */
 document.addEventListener('DOMContentLoaded', ()=>{
   render();
+  try{ refreshTitleOptions(); refreshClientOptions(); }catch(e){}
   startRealtime();
 });
 
