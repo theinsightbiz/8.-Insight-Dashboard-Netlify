@@ -12,6 +12,36 @@ const todayStr = () => new Date().toISOString().slice(0,10);
 const yymm = (dstr) => (dstr||'').slice(0,7);
 const DIGITS = /[\d,]+(?:\.\d{1,2})?/;
 function esc(s){return String(s??'').replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;"}[c]))}
+
+/* =========================
+   Typeahead (datalist) for Client & Title
+   ========================= */
+function ensureDatalist(id){
+  let dl = document.getElementById(id);
+  if(!dl){
+    dl = document.createElement('datalist');
+    dl.id = id;
+    document.body.appendChild(dl);
+  }
+  return dl;
+}
+function updateDatalist(id, items){
+  const dl = ensureDatalist(id);
+  if(!Array.isArray(items)) items = [];
+  dl.innerHTML = items.map(v => `<option value="${esc(v)}"></option>`).join('');
+}
+function initCombo(inputId, hiddenId, listId){
+  const input = document.getElementById(inputId);
+  const hidden = document.getElementById(hiddenId);
+  if(!input || !hidden) return;
+  input.setAttribute('list', listId);
+  const sync = ()=> hidden.value = (input.value||'').trim();
+  input.addEventListener('input', sync);
+  input.addEventListener('change', sync);
+  sync();
+}
+
+
 function fmtDateDDMMYYYY(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
 function parseDDMM(dateStr){ const m = dateStr && dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); return m ? `${m[3]}-${m[2]}-${m[1]}` : ''; }
 function addDays(n){ const d=new Date(); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); }
@@ -42,6 +72,15 @@ function refreshTitleOptions(){
   sel.innerHTML = opts.join('');
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleTitleCustom(sel.value);
+
+// Typeahead: update datalist and show input, hide select
+try{
+  updateDatalist('titleList', getAllTitles());
+  const sel = document.getElementById('fTitleSelect');
+  const inp = document.getElementById('fTitleNew');
+  if(sel){ sel.style.display='none'; }
+  if(inp){ inp.style.display=''; initCombo('fTitleNew','fTitle','titleList'); }
+}catch(e){}
 }
 function toggleTitleCustom(val){
   const custom = document.getElementById('fTitleNew');
@@ -72,6 +111,15 @@ function refreshClientOptions(){
   sel.innerHTML = opts.join('');
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleClientCustom(sel.value);
+
+// Typeahead: update datalist and show input, hide select
+try{
+  updateDatalist('clientList', getAllClients());
+  const sel = document.getElementById('fClientSelect');
+  const inp = document.getElementById('fClientNew');
+  if(sel){ sel.style.display='none'; }
+  if(inp){ inp.style.display=''; initCombo('fClientNew','fClient','clientList'); }
+}catch(e){}
 }
 function toggleClientCustom(val){
   const custom = document.getElementById('fClientNew');
@@ -377,7 +425,7 @@ function openModal(title){
   if (modal) {
     $('#taskModalTitle') && ($('#taskModalTitle').textContent = title||'Task');
     modal.classList.add('active');
-    setTimeout(()=> (document.getElementById('fClientSelect')||document.getElementById('fClient'))?.focus(), 20);
+    setTimeout(()=> (document.getElementById('fClientNew')||document.getElementById('fClient'))?.focus(), 20);
   }
 }
 function closeModal(){ modal && modal.classList.remove('active'); }
@@ -453,7 +501,15 @@ $('#addTaskBtn') && ($('#addTaskBtn').onclick = async ()=>{
       if(newC){ newC.value=''; }
       if(hidC){ hidC.value=''; }
     }catch(e){}
-});
+
+    // Typeahead reset
+    try{
+      refreshTitleOptions(); refreshClientOptions();
+      const tI = document.getElementById('fTitleNew'), tH = document.getElementById('fTitle');
+      const cI = document.getElementById('fClientNew'), cH = document.getElementById('fClient');
+      if(tI){ tI.value=''; } if(tH){ tH.value=''; }
+      if(cI){ cI.value=''; } if(cH){ cH.value=''; }
+    }catch(e){}});
 $('#cancelBtn') && ($('#cancelBtn').onclick = closeModal);
 modal && (modal.addEventListener('click', e=>{ if(e.target===modal) closeModal(); }));
 
@@ -462,8 +518,8 @@ function editTask(id){
   if (taskForm){
     openModal('Edit Task');
     taskForm.dataset.editId = id;
-    /* client handled via select/custom */
-    /* title handled via select/custom */
+    document.getElementById('fClientNew') && (document.getElementById('fClientNew').value = t.client||''); document.getElementById('fClient') && (document.getElementById('fClient').value = t.client||'');
+    document.getElementById('fTitleNew') && (document.getElementById('fTitleNew').value = t.title||''); document.getElementById('fTitle') && (document.getElementById('fTitle').value = t.title||'');
     $('#fPriority').value = t.priority||'Medium';
     $('#fAssignee').value = t.assignee||'';
     $('#fStatus').value = t.status||'In Progress';
@@ -523,11 +579,9 @@ window.changeInvoiceStatus = changeInvoiceStatus;
 if (taskForm) {
   taskForm.addEventListener('submit', async (e)=>{
     // Ensure Title & Client from select/new
-    const _selT = document.getElementById('fTitleSelect'), _newT = document.getElementById('fTitleNew');
-    const _selC = document.getElementById('fClientSelect'), _newC = document.getElementById('fClientNew');
-    const _titleVal = _selT ? (_selT.value==='__new__' ? ((_newT && _newT.value.trim())||'') : (_selT.value||'').trim()) : (document.getElementById('fTitle')?.value||'').trim();
-    const _clientVal = _selC ? (_selC.value==='__new__' ? ((_newC && _newC.value.trim())||'') : (_selC.value||'').trim()) : (document.getElementById('fClient')?.value||'').trim();
-    if(!_titleVal){ e.preventDefault(); alert('Please select a Task Title or enter a new one.'); return; }
+    const _titleVal = (document.getElementById('fTitleNew')?.value||document.getElementById('fTitle')?.value||'').trim();
+const _clientVal = (document.getElementById('fClientNew')?.value||document.getElementById('fClient')?.value||'').trim();
+if(!_titleVal){ e.preventDefault(); alert('Please select a Task Title or enter a new one.'); return; }
     if(!_clientVal){ e.preventDefault(); alert('Please select a Client or enter a new one.'); return; }
     e.preventDefault();
     const editId = taskForm.dataset.editId;
@@ -691,7 +745,7 @@ $('#bulkDeleteBtn')?.addEventListener('click', async ()=>{
 /* ---------- Boot ---------- */
 document.addEventListener('DOMContentLoaded', ()=>{
   render();
-  try{ refreshTitleOptions(); refreshClientOptions(); }catch(e){}
+  try{ refreshTitleOptions(); refreshClientOptions(); updateDatalist('titleList', getAllTitles()); updateDatalist('clientList', getAllClients()); initCombo('fTitleNew','fTitle','titleList'); initCombo('fClientNew','fClient','clientList'); }catch(e){}
   startRealtime();
 });
 
