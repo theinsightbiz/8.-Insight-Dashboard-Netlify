@@ -1101,12 +1101,56 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
 });
 
 
-/* === Combobox for Client Name & Task Title === */
+/* === Combobox for Client Name & Task Title (autofill-proof) === */
 (function(){
   const $  = (sel, root=document)=> root.querySelector(sel);
   const $$ = (sel, root=document)=> Array.from(root.querySelectorAll(sel));
   const esc = (s)=> String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
+  /* ---------- kill native datalist / autofill panels ---------- */
+  function nukeDatalists(){
+    // remove our known lists
+    ['clientList','titleList'].forEach(id=>{
+      const dl = document.getElementById(id);
+      if(dl && dl.parentNode) dl.parentNode.removeChild(dl);
+    });
+    // remove any stray <datalist> created by older builds
+    document.querySelectorAll('datalist').forEach(dl=> dl.remove());
+  }
+  function hardDisableNativeSuggestions(input){
+    if(!input) return;
+    // detach from any datalist + turn off autofill related features
+    input.removeAttribute('list');
+    input.setAttribute('autocomplete', 'new-password');
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('autocorrect', 'off');
+    input.setAttribute('spellcheck', 'false');
+    // randomize name to avoid Chrome pattern-based autofill
+    input.setAttribute('name', 'no-autofill-' + Math.random().toString(36).slice(2));
+    // Chrome quirk: brief readOnly prevents native suggestion panel from opening
+    input.addEventListener('focus', ()=>{
+      input.readOnly = true;
+      setTimeout(()=>{ input.readOnly = false; }, 120);
+    });
+  }
+  function addAutofillTrap(beforeEl){
+    // off-screen dummy inputs that catch autofill so Chrome doesn’t target our real fields
+    if(!beforeEl || beforeEl.dataset.trapAdded) return;
+    const trapWrap = document.createElement('div');
+    trapWrap.style.position = 'absolute';
+    trapWrap.style.opacity  = '0';
+    trapWrap.style.pointerEvents = 'none';
+    trapWrap.style.height   = '0';
+    trapWrap.style.overflow = 'hidden';
+    trapWrap.innerHTML = `
+      <input type="text"  autocomplete="username"   tabindex="-1" />
+      <input type="password" autocomplete="new-password" tabindex="-1" />
+    `;
+    beforeEl.parentNode.insertBefore(trapWrap, beforeEl);
+    beforeEl.dataset.trapAdded = '1';
+  }
+
+  /* ---------- pull options from your hidden <select>s ---------- */
   function getSelectValues(selectId){
     const sel = document.getElementById(selectId);
     if(!sel) return [];
@@ -1121,35 +1165,15 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
     return out;
   }
 
-  function hardDisableNativeSuggestions(input){
-    if(!input) return;
-    // Remove any datalist connection and browser suggestion features
-    input.removeAttribute('list');
-    input.setAttribute('autocomplete', 'off');
-    input.setAttribute('autocapitalize', 'off');
-    input.setAttribute('spellcheck', 'false');
-    // On some Chromium builds, setting a random name reduces autofill
-    if(!input.getAttribute('name')) input.setAttribute('name', 'no-autofill-' + Math.random().toString(36).slice(2));
-  }
-
-  function nukeDatalists(){
-    const dl1 = document.getElementById('clientList');
-    const dl2 = document.getElementById('titleList');
-    if(dl1 && dl1.parentNode) dl1.parentNode.removeChild(dl1);
-    if(dl2 && dl2.parentNode) dl2.parentNode.removeChild(dl2);
-    // Also remove any other <datalist> accidentally present
-    document.querySelectorAll('datalist').forEach(dl=>{
-      if (dl.id === 'clientList' || dl.id === 'titleList') dl.remove();
-    });
-  }
-
+  /* ---------- custom combobox ---------- */
   function createCombobox({ input, hidden, source, placeholder='' }){
     if(!input || !hidden || typeof source!=='function') return null;
 
-    // ensure native lists/autofill are OFF
+    // ensure native panels are OFF and add a trap
     hardDisableNativeSuggestions(input);
+    addAutofillTrap(input);
 
-    // wrap + style
+    // wrap for popup positioning
     if(!input.classList.contains('combo-input')){
       const wrap = document.createElement('div');
       wrap.className = 'combo-wrap';
@@ -1230,37 +1254,49 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
     return { refresh: ()=>render(input.value), setValue:(v)=>{ input.value=v||''; hidden.value=v||''; }, focus:()=> input.focus() };
   }
 
+  /* ---------- bootstrap both fields ---------- */
   function setupCombos(){
-    // Remove any datalists that may remain from older builds
+    // Remove any datalists from older builds
     nukeDatalists();
 
-    // Hide the old selects; show the text inputs
+    // Hide legacy selects, show text inputs
     const cSel = document.getElementById('fClientSelect'); if(cSel) cSel.style.display='none';
     const tSel = document.getElementById('fTitleSelect');  if(tSel) tSel.style.display='none';
     const cInp = document.getElementById('fClientNew'); if(cInp) cInp.style.display='';
     const tInp = document.getElementById('fTitleNew');  if(tInp) tInp.style.display='';
 
-    // Disable native suggestions on the text inputs (belt & suspenders)
+    // Turn off native panels firmly
     hardDisableNativeSuggestions(cInp);
     hardDisableNativeSuggestions(tInp);
 
+    // Create comboboxes reading options from the hidden selects
     const clientCombo = createCombobox({
-      input: document.getElementById('fClientNew'),
+      input:  document.getElementById('fClientNew'),
       hidden: document.getElementById('fClient'),
       source: ()=> getSelectValues('fClientSelect'),
       placeholder: 'Type client name…'
     });
     const titleCombo = createCombobox({
-      input: document.getElementById('fTitleNew'),
+      input:  document.getElementById('fTitleNew'),
       hidden: document.getElementById('fTitle'),
       source: ()=> getSelectValues('fTitleSelect'),
       placeholder: 'Type task title…'
     });
 
+    // Also disable browser autocomplete on the form itself (belt & suspenders)
+    const form = document.getElementById('taskForm');
+    if(form){ form.setAttribute('autocomplete','off'); }
+
+    // On modal open, sync values & refresh lists
     const modal = document.getElementById('taskModal');
     if(modal){
       const obs = new MutationObserver(()=>{
         if(!modal.classList.contains('active')) return;
+        // re-disable native just in case the framework re-rendered nodes
+        hardDisableNativeSuggestions(document.getElementById('fClientNew'));
+        hardDisableNativeSuggestions(document.getElementById('fTitleNew'));
+        nukeDatalists();
+
         const c = (document.getElementById('fClient')?.value || document.getElementById('fClientSelect')?.value || '').trim();
         const t = (document.getElementById('fTitle')?.value  || document.getElementById('fTitleSelect')?.value  || '').trim();
         clientCombo && clientCombo.setValue(c);
@@ -1272,14 +1308,19 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
       obs.observe(modal, { attributes:true, attributeFilter:['class'] });
     }
 
+    // When your app repopulates the hidden selects, refresh suggestions
     const selObs = new MutationObserver(()=>{
       clientCombo && clientCombo.refresh();
       titleCombo  && titleCombo.refresh();
+      // keep native panels off if nodes replaced
+      hardDisableNativeSuggestions(document.getElementById('fClientNew'));
+      hardDisableNativeSuggestions(document.getElementById('fTitleNew'));
+      nukeDatalists();
     });
     if(cSel) selObs.observe(cSel, { childList:true, subtree:true, attributes:true });
     if(tSel) selObs.observe(tSel, { childList:true, subtree:true, attributes:true });
 
-    // safety sync
+    // safety sync if user types and never opens suggestions
     cInp && cInp.addEventListener('input', ()=>{ const h=document.getElementById('fClient'); if(h) h.value=(cInp.value||'').trim(); });
     tInp && tInp.addEventListener('input', ()=>{ const h=document.getElementById('fTitle');  if(h) h.value=(tInp.value||'').trim(); });
   }
@@ -1290,4 +1331,5 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
     setupCombos(); setTimeout(setupCombos, 120);
   }
 })();
+
 
