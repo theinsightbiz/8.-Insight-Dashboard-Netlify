@@ -270,23 +270,78 @@ select optgroup,
 
 /* === Combobox styling (Client/Title) === */
 .combo-wrap{ position:relative; }
+
 .combo-input{
-  width:100%; border-radius:10px; border:1px solid var(--line);
-  background:var(--field); color:var(--text); padding:8px 10px; outline:none;
+  width:100%;
+  border-radius:10px;
+  border:1px solid var(--line, #2b2f3a);
+  background:var(--field, #121319);
+  color:var(--text, #e8ecf2);
+  padding:8px 10px;
+  outline:none;
 }
-.combo-input:focus{ box-shadow:0 0 0 3px rgba(120,176,228,.30); }
+.combo-input:focus{
+  box-shadow:0 0 0 3px rgba(120,176,228,.30);
+}
+
 .combo-menu{
-  position:absolute; top:calc(100% + 6px); left:0; right:0; z-index:9999;
-  background:var(--panel); border:1px solid var(--line); border-radius:12px;
-  box-shadow:var(--shadow); max-height:260px; overflow:auto; padding:6px;
+  position:absolute;
+  top:calc(100% + 6px);
+  left:0; right:0;
+  z-index: 9999;
+  background:var(--panel, #0f1117);
+  border:1px solid var(--line, #2b2f3a);
+  border-radius:12px;
+  box-shadow:var(--shadow, 0 12px 40px rgba(0,0,0,.4));
+  max-height:260px;
+  overflow:auto;
+  padding:6px;
 }
+
 .combo-item{
-  display:flex; align-items:center; gap:8px;
-  padding:8px 10px; border-radius:8px; cursor:pointer; user-select:none;
-  color:var(--text);
+  display:flex;
+  align-items:center;
+  gap:8px;
+  padding:8px 10px;
+  border-radius:8px;
+  cursor:pointer;
+  user-select:none;
+  color:var(--text, #e8ecf2);
 }
-.combo-item[data-kind="add"]{ color:#bfe0ff; }
+.combo-item .text{
+  flex:1 1 auto;
+  min-width:0;
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
 .combo-item .match{ font-weight:700; }
-.combo-item[aria-selected="true"], .combo-item:hover{ background:rgba(120,176,228,.12); }
-.combo-empty{ padding:10px; color:var(--muted); }
+
+.combo-item[aria-selected="true"],
+.combo-item:hover{
+  background:rgba(120,176,228,.12);
+}
+
+/* inline delete button (🗑) */
+.combo-del{
+  flex:0 0 auto;
+  border:none;
+  background:transparent;
+  color:#ff9fa0;
+  font-size:14px;
+  line-height:1;
+  padding:6px 8px;
+  border-radius:6px;
+  cursor:pointer;
+}
+.combo-del:hover{
+  background:rgba(255, 80, 80, .10);
+  color:#ff6b6f;
+}
+
+.combo-empty{
+  padding:10px;
+  color:var(--muted, #9aa3b2);
+}
+
 

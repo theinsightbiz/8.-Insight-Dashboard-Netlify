@@ -1106,51 +1106,48 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
   const $  = (sel, root=document)=> root.querySelector(sel);
   const $$ = (sel, root=document)=> Array.from(root.querySelectorAll(sel));
   const esc = (s)=> String(s??'').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const on  = (el, ev, fn, opts)=> el && el.addEventListener(ev, fn, opts);
 
   /* ---------- kill native datalist / autofill panels ---------- */
   function nukeDatalists(){
-    // remove our known lists
+    // remove known + stray <datalist> so Chrome never shows native list
     ['clientList','titleList'].forEach(id=>{
       const dl = document.getElementById(id);
       if(dl && dl.parentNode) dl.parentNode.removeChild(dl);
     });
-    // remove any stray <datalist> created by older builds
-    document.querySelectorAll('datalist').forEach(dl=> dl.remove());
+    document.querySelectorAll('datalist').forEach(dl => dl.remove());
   }
   function hardDisableNativeSuggestions(input){
     if(!input) return;
-    // detach from any datalist + turn off autofill related features
     input.removeAttribute('list');
     input.setAttribute('autocomplete', 'new-password');
     input.setAttribute('autocapitalize', 'off');
     input.setAttribute('autocorrect', 'off');
     input.setAttribute('spellcheck', 'false');
-    // randomize name to avoid Chrome pattern-based autofill
     input.setAttribute('name', 'no-autofill-' + Math.random().toString(36).slice(2));
-    // Chrome quirk: brief readOnly prevents native suggestion panel from opening
-    input.addEventListener('focus', ()=>{
+    // Chrome quirk: brief readOnly flip inhibits the white suggestion panel
+    on(input, 'focus', ()=>{
       input.readOnly = true;
-      setTimeout(()=>{ input.readOnly = false; }, 120);
+      setTimeout(()=>{ input.readOnly = false; }, 100);
     });
   }
   function addAutofillTrap(beforeEl){
-    // off-screen dummy inputs that catch autofill so Chrome doesn’t target our real fields
     if(!beforeEl || beforeEl.dataset.trapAdded) return;
-    const trapWrap = document.createElement('div');
-    trapWrap.style.position = 'absolute';
-    trapWrap.style.opacity  = '0';
-    trapWrap.style.pointerEvents = 'none';
-    trapWrap.style.height   = '0';
-    trapWrap.style.overflow = 'hidden';
-    trapWrap.innerHTML = `
-      <input type="text"  autocomplete="username"   tabindex="-1" />
+    const trap = document.createElement('div');
+    trap.style.position = 'absolute';
+    trap.style.opacity  = '0';
+    trap.style.pointerEvents = 'none';
+    trap.style.height   = '0';
+    trap.style.overflow = 'hidden';
+    trap.innerHTML = `
+      <input type="text" autocomplete="username" tabindex="-1" />
       <input type="password" autocomplete="new-password" tabindex="-1" />
     `;
-    beforeEl.parentNode.insertBefore(trapWrap, beforeEl);
+    beforeEl.parentNode.insertBefore(trap, beforeEl);
     beforeEl.dataset.trapAdded = '1';
   }
 
-  /* ---------- pull options from your hidden <select>s ---------- */
+  /* ---------- read options from hidden <select> ---------- */
   function getSelectValues(selectId){
     const sel = document.getElementById(selectId);
     if(!sel) return [];
@@ -1165,11 +1162,33 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
     return out;
   }
 
-  /* ---------- custom combobox ---------- */
-  function createCombobox({ input, hidden, source, placeholder='' }){
-    if(!input || !hidden || typeof source!=='function') return null;
+  /* ---------- remove option from hidden <select> ---------- */
+  function removeOptionFromSelect(selectId, value){
+    const sel = document.getElementById(selectId);
+    if(!sel) return false;
+    const target = Array.from(sel.options).find(opt => (opt.value||'').trim() === (value||'').trim());
+    if(target){ sel.removeChild(target); return true; }
+    return false;
+  }
+  // expose global helpers (optional external usage)
+  window.removeClientOption = function(value){
+    if(removeOptionFromSelect('fClientSelect', value)){
+      console.log('Removed client:', value);
+      document.getElementById('fClientSelect')?.dispatchEvent(new Event('change'));
+    } else { console.warn('Client not found:', value); }
+  };
+  window.removeTitleOption = function(value){
+    if(removeOptionFromSelect('fTitleSelect', value)){
+      console.log('Removed title:', value);
+      document.getElementById('fTitleSelect')?.dispatchEvent(new Event('change'));
+    } else { console.warn('Title not found:', value); }
+  };
 
-    // ensure native panels are OFF and add a trap
+  /* ---------- custom combobox ---------- */
+  function createCombobox({ input, hidden, sourceSelectId, placeholder='' }){
+    if(!input || !hidden || !sourceSelectId) return null;
+
+    // ensure native panels are OFF + add trap
     hardDisableNativeSuggestions(input);
     addAutofillTrap(input);
 
@@ -1196,8 +1215,8 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
       return `${a}<span class="match">${b}</span>${c}`;
     };
 
-    const render=(q)=>{
-      const all = source();
+    function refreshList(q){
+      const all = getSelectValues(sourceSelectId);
       const query = (q||'').trim();
       const qn = query.toLowerCase();
       const list = !query ? all.slice(0,50) : all.filter(v=>v.toLowerCase().includes(qn)).slice(0,50);
@@ -1211,120 +1230,146 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
       if(!rows.length){ m.innerHTML = `<div class="combo-empty">Type to search…</div>`; return; }
 
       m.innerHTML = rows.map((r,i)=> r.kind==='add'
-        ? `<div class="combo-item" data-i="${i}" data-k="add">➕ Add “${esc(r.value)}”</div>`
-        : `<div class="combo-item" data-i="${i}" data-k="opt">${highlight(r.value, query)}</div>`).join('');
+        ? `<div class="combo-item" data-i="${i}" data-k="add">
+             <span class="text">➕ Add “${esc(r.value)}”</span>
+           </div>`
+        : `<div class="combo-item" data-i="${i}" data-k="opt">
+             <span class="text">${highlight(r.value, query)}</span>
+             <button type="button" class="combo-del" title="Remove this from list" aria-label="Delete ${esc(r.value)}">🗑</button>
+           </div>`).join('');
 
-      m.querySelectorAll('.combo-item').forEach(el=>{
-        el.addEventListener('mouseenter', ()=>{
-          m.querySelectorAll('.combo-item[aria-selected="true"]').forEach(n=>n.removeAttribute('aria-selected'));
-          el.setAttribute('aria-selected','true'); act = Number(el.dataset.i);
+      // hover + click
+      $$('.combo-item', m).forEach(el=>{
+        on(el, 'mouseenter', ()=>{
+          $$('.combo-item[aria-selected="true"]', m).forEach(n=>n.removeAttribute('aria-selected'));
+          el.setAttribute('aria-selected','true');
+          act = Number(el.dataset.i);
         });
-        el.addEventListener('mousedown', (ev)=>{ ev.preventDefault(); commit(Number(el.dataset.i)); });
+        on(el, 'mousedown', (ev)=>{
+          // If delete button clicked, handle delete only
+          const delBtn = ev.target.closest('.combo-del');
+          if(delBtn){
+            ev.preventDefault();
+            const idx = Number(el.dataset.i);
+            const row = rows[idx];
+            if(row?.kind === 'opt'){
+              const ok = confirm(`Remove “${row.value}” from the list?`);
+              if(ok){
+                // remove from hidden select and refresh
+                removeOptionFromSelect(sourceSelectId, row.value);
+                refreshList(input.value);
+              }
+            }
+            return;
+          }
+          ev.preventDefault();
+          commit(Number(el.dataset.i));
+        });
       });
-    };
+    }
 
-    const commit=(i)=>{
+    function commit(i){
       if(i<0 || i>=rows.length) { close(); return; }
       const r = rows[i];
       const val = (r.kind==='add') ? (input.value||'').trim() : r.value;
       input.value = val;
       hidden.value = val;
       close();
-    };
+    }
 
-    input.addEventListener('input', ()=>{ hidden.value = (input.value||'').trim(); render(input.value); });
-    input.addEventListener('focus', ()=>{ render(input.value); });
-    input.addEventListener('blur', ()=>{ setTimeout(close, 120); });
-    input.addEventListener('keydown', (e)=>{
-      if(!open && (e.key==='ArrowDown' || e.key==='ArrowUp')){ render(input.value); e.preventDefault(); return; }
+    on(input, 'input', ()=>{ hidden.value = (input.value||'').trim(); refreshList(input.value); });
+    on(input, 'focus', ()=>{ refreshList(input.value); });
+    on(input, 'blur',  ()=>{ setTimeout(close, 120); });
+
+    on(input, 'keydown', (e)=>{
+      if(!open && (e.key==='ArrowDown' || e.key==='ArrowUp')){ refreshList(input.value); e.preventDefault(); return; }
       if(!open) return;
       const max = rows.length-1;
-      if(e.key==='ArrowDown'){ act = Math.min(max, act+1); update(); e.preventDefault(); }
-      else if(e.key==='ArrowUp'){ act = Math.max(0, act-1); update(); e.preventDefault(); }
+      if(e.key==='ArrowDown'){ act = Math.min(max, act+1); updateActive(); e.preventDefault(); }
+      else if(e.key==='ArrowUp'){ act = Math.max(0, act-1); updateActive(); e.preventDefault(); }
       else if(e.key==='Enter'){ commit(act); e.preventDefault(); }
       else if(e.key==='Escape'){ close(); e.preventDefault(); }
       else if(e.key==='Tab'){ if(act>=0) commit(act); else hidden.value = (input.value||'').trim(); }
     });
-    function update(){
+
+    function updateActive(){
       if(!menu) return;
-      menu.querySelectorAll('.combo-item').forEach(el=>el.removeAttribute('aria-selected'));
+      $$('.combo-item', menu).forEach(n=>n.removeAttribute('aria-selected'));
       const el = menu.querySelector(`.combo-item[data-i="${act}"]`);
       if(el){ el.setAttribute('aria-selected','true'); el.scrollIntoView({block:'nearest'}); }
     }
-    return { refresh: ()=>render(input.value), setValue:(v)=>{ input.value=v||''; hidden.value=v||''; }, focus:()=> input.focus() };
+
+    // Return API for external refresh/focus
+    return {
+      refresh: () => refreshList(input.value),
+      setValue: (v) => { input.value = v||''; hidden.value = v||''; },
+      focus:   () => input.focus()
+    };
   }
 
   /* ---------- bootstrap both fields ---------- */
   function setupCombos(){
-    // Remove any datalists from older builds
     nukeDatalists();
 
-    // Hide legacy selects, show text inputs
-    const cSel = document.getElementById('fClientSelect'); if(cSel) cSel.style.display='none';
-    const tSel = document.getElementById('fTitleSelect');  if(tSel) tSel.style.display='none';
-    const cInp = document.getElementById('fClientNew'); if(cInp) cInp.style.display='';
-    const tInp = document.getElementById('fTitleNew');  if(tInp) tInp.style.display='';
+    // Hide legacy selects; show inputs
+    const cSel = $('#fClientSelect'); if(cSel) cSel.style.display = 'none';
+    const tSel = $('#fTitleSelect');  if(tSel) tSel.style.display  = 'none';
+    const cInp = $('#fClientNew');    if(cInp) cInp.style.display  = '';
+    const tInp = $('#fTitleNew');     if(tInp) tInp.style.display  = '';
 
-    // Turn off native panels firmly
     hardDisableNativeSuggestions(cInp);
     hardDisableNativeSuggestions(tInp);
 
-    // Create comboboxes reading options from the hidden selects
-    const clientCombo = createCombobox({
-      input:  document.getElementById('fClientNew'),
-      hidden: document.getElementById('fClient'),
-      source: ()=> getSelectValues('fClientSelect'),
+    // Create or reuse singletons (avoid duplicate wiring)
+    const state = (window.__clientTitleCombos ||= {});
+    state.clientCombo = state.clientCombo || createCombobox({
+      input:  cInp,
+      hidden: $('#fClient'),
+      sourceSelectId: 'fClientSelect',
       placeholder: 'Type client name…'
     });
-    const titleCombo = createCombobox({
-      input:  document.getElementById('fTitleNew'),
-      hidden: document.getElementById('fTitle'),
-      source: ()=> getSelectValues('fTitleSelect'),
+    state.titleCombo  = state.titleCombo  || createCombobox({
+      input:  tInp,
+      hidden: $('#fTitle'),
+      sourceSelectId: 'fTitleSelect',
       placeholder: 'Type task title…'
     });
 
-    // Also disable browser autocomplete on the form itself (belt & suspenders)
-    const form = document.getElementById('taskForm');
-    if(form){ form.setAttribute('autocomplete','off'); }
-
-    // On modal open, sync values & refresh lists
-    const modal = document.getElementById('taskModal');
-    if(modal){
-      const obs = new MutationObserver(()=>{
-        if(!modal.classList.contains('active')) return;
-        // re-disable native just in case the framework re-rendered nodes
-        hardDisableNativeSuggestions(document.getElementById('fClientNew'));
-        hardDisableNativeSuggestions(document.getElementById('fTitleNew'));
+    // Modal open -> sync values + refresh + focus
+    const modal = $('#taskModal');
+    if(modal && !state.modalObs){
+      state.modalObs = new MutationObserver(()=>{
+        const isOpen = modal.classList.contains('active') || modal.classList.contains('show');
+        if(!isOpen) return;
+        hardDisableNativeSuggestions($('#fClientNew'));
+        hardDisableNativeSuggestions($('#fTitleNew'));
         nukeDatalists();
-
-        const c = (document.getElementById('fClient')?.value || document.getElementById('fClientSelect')?.value || '').trim();
-        const t = (document.getElementById('fTitle')?.value  || document.getElementById('fTitleSelect')?.value  || '').trim();
-        clientCombo && clientCombo.setValue(c);
-        titleCombo  && titleCombo.setValue(t);
-        clientCombo && clientCombo.refresh();
-        titleCombo  && titleCombo.refresh();
-        setTimeout(()=> clientCombo && clientCombo.focus(), 20);
+        const curClient = ($('#fClient')?.value || $('#fClientSelect')?.value || '').trim();
+        const curTitle  = ($('#fTitle')?.value  || $('#fTitleSelect')?.value  || '').trim();
+        state.clientCombo?.setValue(curClient);
+        state.titleCombo?.setValue(curTitle);
+        state.clientCombo?.refresh();
+        state.titleCombo?.refresh();
+        setTimeout(()=> state.clientCombo?.focus(), 20);
       });
-      obs.observe(modal, { attributes:true, attributeFilter:['class'] });
+      state.modalObs.observe(modal, { attributes:true, attributeFilter:['class'] });
     }
 
-    // When your app repopulates the hidden selects, refresh suggestions
-    const selObs = new MutationObserver(()=>{
-      clientCombo && clientCombo.refresh();
-      titleCombo  && titleCombo.refresh();
-      // keep native panels off if nodes replaced
-      hardDisableNativeSuggestions(document.getElementById('fClientNew'));
-      hardDisableNativeSuggestions(document.getElementById('fTitleNew'));
-      nukeDatalists();
-    });
-    if(cSel) selObs.observe(cSel, { childList:true, subtree:true, attributes:true });
-    if(tSel) selObs.observe(tSel, { childList:true, subtree:true, attributes:true });
-
-    // safety sync if user types and never opens suggestions
-    cInp && cInp.addEventListener('input', ()=>{ const h=document.getElementById('fClient'); if(h) h.value=(cInp.value||'').trim(); });
-    tInp && tInp.addEventListener('input', ()=>{ const h=document.getElementById('fTitle');  if(h) h.value=(tInp.value||'').trim(); });
+    // Select mutations -> refresh suggestions
+    if(cSel && !state.cSelObs){
+      state.cSelObs = new MutationObserver(()=>{ state.clientCombo?.refresh(); });
+      state.cSelObs.observe(cSel, { childList:true, subtree:true, attributes:true });
+    }
+    if(tSel && !state.tSelObs){
+      state.tSelObs = new MutationObserver(()=>{ state.titleCombo?.refresh(); });
+      state.tSelObs.observe(tSel, { childList:true, subtree:true, attributes:true });
+    }
   }
 
+  // Expose a safe manual refresh hook (optional)
+  window.refreshClientTitleCombos = setupCombos;
+
+  // DOM ready
   if (document.readyState === 'loading'){
     document.addEventListener('DOMContentLoaded', ()=>{ setupCombos(); setTimeout(setupCombos, 120); });
   } else {
