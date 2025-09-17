@@ -1121,8 +1121,35 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
     return out;
   }
 
+  function hardDisableNativeSuggestions(input){
+    if(!input) return;
+    // Remove any datalist connection and browser suggestion features
+    input.removeAttribute('list');
+    input.setAttribute('autocomplete', 'off');
+    input.setAttribute('autocapitalize', 'off');
+    input.setAttribute('spellcheck', 'false');
+    // On some Chromium builds, setting a random name reduces autofill
+    if(!input.getAttribute('name')) input.setAttribute('name', 'no-autofill-' + Math.random().toString(36).slice(2));
+  }
+
+  function nukeDatalists(){
+    const dl1 = document.getElementById('clientList');
+    const dl2 = document.getElementById('titleList');
+    if(dl1 && dl1.parentNode) dl1.parentNode.removeChild(dl1);
+    if(dl2 && dl2.parentNode) dl2.parentNode.removeChild(dl2);
+    // Also remove any other <datalist> accidentally present
+    document.querySelectorAll('datalist').forEach(dl=>{
+      if (dl.id === 'clientList' || dl.id === 'titleList') dl.remove();
+    });
+  }
+
   function createCombobox({ input, hidden, source, placeholder='' }){
     if(!input || !hidden || typeof source!=='function') return null;
+
+    // ensure native lists/autofill are OFF
+    hardDisableNativeSuggestions(input);
+
+    // wrap + style
     if(!input.classList.contains('combo-input')){
       const wrap = document.createElement('div');
       wrap.className = 'combo-wrap';
@@ -1131,6 +1158,7 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
       input.classList.add('combo-input');
       if(placeholder) input.placeholder = placeholder;
     }
+
     let open=false, act=-1, menu=null, rows=[];
 
     const close=()=>{ if(menu && menu.parentNode){ menu.parentNode.removeChild(menu); } menu=null; open=false; act=-1; };
@@ -1154,11 +1182,14 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
       if(query && !exact) rows.push({kind:'add', value:query});
       for(const v of list) rows.push({kind:'opt', value:v});
       act = rows.length ? 0 : -1;
+
       const m = ensure();
       if(!rows.length){ m.innerHTML = `<div class="combo-empty">Type to search…</div>`; return; }
+
       m.innerHTML = rows.map((r,i)=> r.kind==='add'
         ? `<div class="combo-item" data-i="${i}" data-k="add">➕ Add “${esc(r.value)}”</div>`
         : `<div class="combo-item" data-i="${i}" data-k="opt">${highlight(r.value, query)}</div>`).join('');
+
       m.querySelectorAll('.combo-item').forEach(el=>{
         el.addEventListener('mouseenter', ()=>{
           m.querySelectorAll('.combo-item[aria-selected="true"]').forEach(n=>n.removeAttribute('aria-selected'));
@@ -1200,10 +1231,19 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
   }
 
   function setupCombos(){
+    // Remove any datalists that may remain from older builds
+    nukeDatalists();
+
+    // Hide the old selects; show the text inputs
     const cSel = document.getElementById('fClientSelect'); if(cSel) cSel.style.display='none';
     const tSel = document.getElementById('fTitleSelect');  if(tSel) tSel.style.display='none';
     const cInp = document.getElementById('fClientNew'); if(cInp) cInp.style.display='';
     const tInp = document.getElementById('fTitleNew');  if(tInp) tInp.style.display='';
+
+    // Disable native suggestions on the text inputs (belt & suspenders)
+    hardDisableNativeSuggestions(cInp);
+    hardDisableNativeSuggestions(tInp);
+
     const clientCombo = createCombobox({
       input: document.getElementById('fClientNew'),
       hidden: document.getElementById('fClient'),
@@ -1239,6 +1279,7 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
     if(cSel) selObs.observe(cSel, { childList:true, subtree:true, attributes:true });
     if(tSel) selObs.observe(tSel, { childList:true, subtree:true, attributes:true });
 
+    // safety sync
     cInp && cInp.addEventListener('input', ()=>{ const h=document.getElementById('fClient'); if(h) h.value=(cInp.value||'').trim(); });
     tInp && tInp.addEventListener('input', ()=>{ const h=document.getElementById('fTitle');  if(h) h.value=(tInp.value||'').trim(); });
   }
