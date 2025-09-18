@@ -317,5 +317,703 @@ select optgroup,
 
 .combo-empty{ padding:10px; color:var(--muted, #9aa3b2); }
 
+/* Modal container + dialog polish */
+#taskModal .dialog{
+  width:min(940px,98vw);
+  border-radius:20px;
+  box-shadow: var(--shadow);
+  background: linear-gradient(180deg, var(--panel), #283039);
+  border: 1px solid var(--line);
+}
+#taskModal .dialog header{
+  padding:16px 18px 14px;
+  border-bottom:1px solid var(--line);
+}
+#taskModal .dialog h2{
+  margin:0;
+  font-weight:800;
+  font-size:20px;
+  letter-spacing:.2px;
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+#taskModal .dialog h2::before{
+  content:"\25CF"; /* blue radio-like dot */
+  display:inline-block;
+  width:10px;height:10px;
+  transform:translateY(-1px);
+  color: var(--brand);
+}
+
+/* Form body grid spacing */
+#taskModal .dialog .body{ padding:14px 16px 4px; }
+#taskModal .dialog .grid2{ grid-template-columns: 1fr 1fr; gap:14px; }
+
+/* Labels (muted, compact) */
+#taskModal .dialog label{
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing:.2px;
+  margin: 8px 2px 6px;
+  display:flex; align-items:center; gap:8px;
+}
+
+/* Inputs — soft “pill” look like screenshots */
+#taskModal .dialog input,
+#taskModal .dialog select,
+#taskModal .dialog textarea{
+  background: var(--field);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  outline: none;
+  transition: box-shadow .16s ease, border-color .16s ease, background .16s ease;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+}
+#taskModal .dialog textarea{ min-height: 96px; }
+
+/* Focus ring consistent with shots */
+#taskModal .dialog input:focus,
+#taskModal .dialog select:focus,
+#taskModal .dialog textarea:focus{
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(120,176,228,.28);
+}
+
+/* Footer buttons spacing */
+#taskModal .dialog footer{
+  padding: 12px 16px;
+  border-top: 1px solid var(--line);
+}
+
+/* Placeholder look */
+#taskModal ::placeholder{ color: rgba(233,238,244,.65); }
+
+/* Select dropdown text color in dark */
+#taskModal select option { background: var(--field); color: var(--text); }
+
+/* ===== Field Icons (as in screenshots) ===== */
+/* Uses current DOM order in .grid2 */
+#taskModal .dialog .grid2 > div:nth-child(1) > label::before  { content: "👤"; }
+#taskModal .dialog .grid2 > div:nth-child(2) > label::before  { content: "📝"; }
+#taskModal .dialog .grid2 > div:nth-child(3) > label::before  { content: "🎯"; }
+#taskModal .dialog .grid2 > div:nth-child(4) > label::before  { content: "👥"; }
+#taskModal .dialog .grid2 > div:nth-child(5) > label::before  { content: "📊"; } /* Status */
+#taskModal .dialog .grid2 > div:nth-child(6) > label::before  { content: "📅"; }
+#taskModal .dialog .grid2 > div:nth-child(7) > label::before  { content: "₹";  font-weight:800; }
+#taskModal .dialog .grid2 > div:nth-child(8) > label::before  { content: "₹"; }
+#taskModal .dialog .grid2 > div:nth-child(9) > label::before  { content: "🧾"; }
+#taskModal .dialog .grid2 > div:nth-child(10) > label::before { content: "🗒️"; }
+#taskModal .dialog .grid2 > div:nth-child(11) > label::before { content: "♻️"; }
+
+/* Make the icon dots look aligned and subtle */
+#taskModal .dialog label::before{
+  display:inline-flex; align-items:center; justify-content:center;
+  width: 18px; height: 18px; font-size: 14px;
+  border-radius: 6px;
+  background: rgba(120,176,228,.10);
+  border: 1px solid rgba(120,176,228,.25);
+  color: #cfe5fb;
+}
+
+/* ===== Two special “combo” helpers already in HTML ===== */
+#fClientSelect, #fTitleSelect{ appearance: none; }
+
+/* Hint text like the screenshot */
+#taskModal .hint{
+  color: var(--muted);
+  font-size: 11px;
+  margin-top: 6px;
+  opacity: .9;
+}
+
+/* ===== Deadline field visual parity (calendar box feel) ===== */
+#fDeadline{
+  position: relative;
+  padding-right: 38px;
+}
+#fDeadline::-webkit-calendar-picker-indicator{
+  filter: invert(1) opacity(.85);
+}
+
+/* Money inputs (right aligned, tabular) */
+#fFee, #fAdvance{
+  text-align:right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Small fix: client/title “new…” inputs spacing (already in HTML) */
+#fClientNew, #fTitleNew{
+  height: 42px !important;
+  border-radius: 12px !important;
+  background: var(--field) !important;
+  border: 1px solid var(--line) !important;
+  color: var(--text) !important;
+  padding: 10px 12px !important;
+}
+
+/* === Recurring monthly — align flush, no extra spacing === */
+#taskModal .dialog .grid2 > div:last-child{
+  /* keep full width but remove card styling */
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+
+  /* eat the grid row gap so it visually touches the row above */
+  margin-top: -14px; /* equals your .grid2 row gap */
+}
+
+/* Checkbox + label inline, perfectly aligned */
+#taskModal .dialog .grid2 > div:last-child label{
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Checkbox alignment */
+#taskModal #fRecurring{
+  accent-color: var(--brand);
+  margin: 0;
+  transform: translateY(0); /* remove previous nudge */
+}
+
+/* Hint sits directly under the label text edge, no extra top gap */
+#taskModal .dialog .grid2 > div:last-child .hint{
+  margin: 2px 0 0 26px; /* lines up with label text after checkbox */
+  font-size: 11px;
+  opacity: .9;
+}
+
+/* On small screens keep it clean (wrap neatly) */
+@media (max-width: 640px){
+  #taskModal .dialog .grid2 > div:last-child{
+    flex-wrap: wrap;
+    margin-top: -12px; /* match responsive row gap if different */
+  }
+  #taskModal .dialog .grid2 > div:last-child .hint{
+    margin-left: 26px;
+  }
+}
+
+/* ===== New Task header — new icon + perfect alignment ===== */
+#taskModal .dialog header{
+  padding:16px 18px 14px; /* keep your existing spacing */
+}
+
+#taskModal .dialog h2{
+  display: inline-flex;           /* keep text and icon on one baseline */
+  align-items: center;            /* vertical centering */
+  gap: 10px;
+  line-height: 1.15;
+  margin: 0;
+}
+
+/* swap the old bullet with a vector icon, tinted with --brand */
+#taskModal .dialog h2::before{
+  content: "";
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+
+  /* color the icon via mask so it always matches your brand color */
+  background-color: var(--brand);
+
+  /* check-circle icon (clean and neutral) */
+  -webkit-mask: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+    <path d='M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Zm-1.5-6.5 6-6-1.414-1.414L10.5 12.672 8.914 11.086 7.5 12.5l3 3Z'/>\
+  </svg>") no-repeat center / contain;
+          mask: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+    <path d='M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10Zm-1.5-6.5 6-6-1.414-1.414L10.5 12.672 8.914 11.086 7.5 12.5l3 3Z'/>\
+  </svg>") no-repeat center / contain;
+
+  /* nudge if your font’s cap-height looks off; tweak by ±1px if needed */
+  transform: translateY(0);
+}
+
+/* Scope card chrome to ONLY the top-level dialog inside the modal */
+#taskModal > .dialog{
+  width:min(940px,98vw);              /* your desired modal width */
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: var(--shadow);
+}
+
+/* Neutralize any nested .dialog (used as the grid container) */
+#taskModal .dialog .dialog.grid2{
+  width: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;              /* so it lines up with header padding */
+}
+
+/* Make header/body/footer share identical horizontal padding */
+#taskModal .dialog{ --padX: 20px; }   /* single source of truth */
+#taskModal .dialog > header,
+#taskModal .dialog > .body,
+#taskModal .dialog > footer{
+  padding-left: var(--padX) !important;
+  padding-right: var(--padX) !important;
+}
+
+/* Ensure the grid itself isn’t adding extra horizontal offset */
+#taskModal .dialog .grid2{
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+  gap: 14px;                           /* keep your intended row/col gap */
+}
+#taskModal .dialog .grid2 > div{
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+}
+
+/* Optional: keep the “New Task” icon/text perfectly aligned on the baseline */
+#taskModal .dialog header h2{
+  display:inline-flex; align-items:center; gap:10px; margin:0;
+}
+
+/***** =====================================================
+   Create Invoice Modal — parity with Add Task modal
+   Targets: #invoiceModal, #createInvoiceModal, [data-modal="create-invoice"]
+========================================================= *****/
+
+/* ---------- Scope to the TOP-LEVEL dialog only ---------- */
+#invoiceModal > .dialog,
+#createInvoiceModal > .dialog,
+[data-modal="create-invoice"] > .dialog{
+  width: min(940px, 98vw);
+  background: linear-gradient(180deg, var(--panel), #283039);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+  box-shadow: var(--shadow);
+}
+
+/* Neutralize any nested .dialog used as layout wrappers inside */
+#invoiceModal .dialog .dialog,
+#createInvoiceModal .dialog .dialog,
+[data-modal="create-invoice"] .dialog .dialog{
+  width: auto !important;
+  background: transparent !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+/* ---------- Unified horizontal padding (header/body/footer) ---------- */
+#invoiceModal .dialog,
+#createInvoiceModal .dialog,
+[data-modal="create-invoice"] .dialog{
+  --padX: 20px; /* single source of truth */
+}
+
+#invoiceModal .dialog > header,
+#invoiceModal .dialog > .body,
+#invoiceModal .dialog > footer,
+#createInvoiceModal .dialog > header,
+#createInvoiceModal .dialog > .body,
+#createInvoiceModal .dialog > footer,
+[data-modal="create-invoice"] .dialog > header,
+[data-modal="create-invoice"] .dialog > .body,
+[data-modal="create-invoice"] .dialog > footer{
+  padding-left: var(--padX) !important;
+  padding-right: var(--padX) !important;
+  box-sizing: border-box;
+}
+
+/* Keep vertical rhythm */
+#invoiceModal .dialog > header,
+#createInvoiceModal .dialog > header,
+[data-modal="create-invoice"] .dialog > header{ padding-top:16px; padding-bottom:14px; }
+#invoiceModal .dialog > .body,
+#createInvoiceModal .dialog > .body,
+[data-modal="create-invoice"] .dialog > .body{  padding-top:14px; padding-bottom:4px; }
+#invoiceModal .dialog > footer,
+#createInvoiceModal .dialog > footer,
+[data-modal="create-invoice"] .dialog > footer{ padding-top:12px; padding-bottom:12px; }
+
+/* ---------- Header H2: new icon + perfect baseline alignment ---------- */
+#invoiceModal .dialog h2,
+#createInvoiceModal .dialog h2,
+[data-modal="create-invoice"] .dialog h2{
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  line-height: 1.15;
+  margin: 0;
+  font-weight: 800;
+  font-size: 20px;
+  letter-spacing: .2px;
+}
+
+/* Clipboard-check icon tinted to --brand (changeable like in Add Task) */
+#invoiceModal .dialog h2::before,
+#createInvoiceModal .dialog h2::before,
+[data-modal="create-invoice"] .dialog h2::before{
+  content: "";
+  display: inline-block;
+  width: 18px; height: 18px;
+  background-color: var(--brand);
+  -webkit-mask: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+    <path d='M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0-1 1v1h8V6a1 1 0 0 0-1-1H9Z'/>\
+    <path d='M9.5 12.5 11.5 14.5 16 10' stroke='none'/>\
+  </svg>") no-repeat center / contain;
+          mask: url("data:image/svg+xml;utf8,\
+  <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'>\
+    <path d='M9 3h6a2 2 0 0 1 2 2h1a2 2 0 0 1 2 2v11a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V7a2 2 0 0 1 2-2h1a2 2 0 0 1 2-2Zm0 2a1 1 0 0 0-1 1v1h8V6a1 1 0 0 0-1-1H9Z'/>\
+    <path d='M9.5 12.5 11.5 14.5 16 10' stroke='none'/>\
+  </svg>") no-repeat center / contain;
+}
+
+/* ---------- Grid and fields ---------- */
+#invoiceModal .dialog .grid2,
+#createInvoiceModal .dialog .grid2,
+[data-modal="create-invoice"] .dialog .grid2{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  margin-left: 0 !important;
+  margin-right: 0 !important;
+}
+
+#invoiceModal .dialog .grid2 > div,
+#createInvoiceModal .dialog .grid2 > div,
+[data-modal="create-invoice"] .dialog .grid2 > div{
+  padding: 2px 0 4px;
+}
+
+/* Labels */
+#invoiceModal .dialog label,
+#createInvoiceModal .dialog label,
+[data-modal="create-invoice"] .dialog label{
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: .2px;
+  margin: 8px 2px 6px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Inputs/selects/textarea — pill look + focus */
+#invoiceModal .dialog input,
+#invoiceModal .dialog select,
+#invoiceModal .dialog textarea,
+#createInvoiceModal .dialog input,
+#createInvoiceModal .dialog select,
+#createInvoiceModal .dialog textarea,
+[data-modal="create-invoice"] .dialog input,
+[data-modal="create-invoice"] .dialog select,
+[data-modal="create-invoice"] .dialog textarea{
+  background: var(--field);
+  border: 1px solid var(--line);
+  color: var(--text);
+  padding: 10px 12px;
+  border-radius: 12px;
+  outline: none;
+  transition: box-shadow .16s ease, border-color .16s ease, background .16s ease;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.02);
+  height: 42px;
+}
+
+#invoiceModal .dialog textarea,
+#createInvoiceModal .dialog textarea,
+[data-modal="create-invoice"] .dialog textarea{
+  min-height: 110px; height: auto;
+}
+
+#invoiceModal .dialog input:focus,
+#invoiceModal .dialog select:focus,
+#invoiceModal .dialog textarea:focus,
+#createInvoiceModal .dialog input:focus,
+#createInvoiceModal .dialog select:focus,
+#createInvoiceModal .dialog textarea:focus,
+[data-modal="create-invoice"] .dialog input:focus,
+[data-modal="create-invoice"] .dialog select:focus,
+[data-modal="create-invoice"] .dialog textarea:focus{
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(120,176,228,.28);
+}
+
+#invoiceModal ::placeholder,
+#createInvoiceModal ::placeholder,
+[data-modal="create-invoice"] ::placeholder{ color: rgba(233,238,244,.65); }
+
+#invoiceModal select option,
+#createInvoiceModal select option,
+[data-modal="create-invoice"] select option{
+  background: var(--field); color: var(--text);
+}
+
+/* Date pickers / calendar affordance */
+#invoiceModal input[type="date"],
+#createInvoiceModal input[type="date"],
+[data-modal="create-invoice"] input[type="date"]{
+  padding-right: 38px;
+}
+#invoiceModal input[type="date"]::-webkit-calendar-picker-indicator,
+#createInvoiceModal input[type="date"]::-webkit-calendar-picker-indicator,
+[data-modal="create-invoice"] input[type="date"]::-webkit-calendar-picker-indicator{
+  filter: invert(1) opacity(.85);
+}
+
+/* Money fields (right-align totals, tabular) */
+#invoiceModal .money,
+#createInvoiceModal .money,
+[data-modal="create-invoice"] .money{
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Footer buttons (consistency) */
+#invoiceModal .dialog footer,
+#createInvoiceModal .dialog footer,
+[data-modal="create-invoice"] .dialog footer{
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- Inline field icons (optional; adjust order if needed) ---------- */
+/* Map to your field order. Safe defaults shown (Client, Invoice No., Status, Date, Due, Items, Subtotal, Tax, Discount, Total, Notes, Payment, etc.) */
+#invoiceModal .dialog .grid2 > div:nth-child(1) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(1) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(1) > label::before{ content:"👤"; }
+
+#invoiceModal .dialog .grid2 > div:nth-child(2) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(2) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(2) > label::before{ content:"#"; font-weight:800; }
+
+#invoiceModal .dialog .grid2 > div:nth-child(3) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(3) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(3) > label::before{ content:"📊"; } /* Status */
+
+#invoiceModal .dialog .grid2 > div:nth-child(4) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(4) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(4) > label::before{ content:"📅"; } /* Date */
+
+#invoiceModal .dialog .grid2 > div:nth-child(5) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(5) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(5) > label::before{ content:"⏰"; } /* Due */
+
+#invoiceModal .dialog .grid2 > div:nth-child(6) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(6) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(6) > label::before{ content:"🧾"; } /* Items */
+
+#invoiceModal .dialog .grid2 > div:nth-child(7) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(7) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(7) > label::before{ content:"₹"; font-weight:800; } /* Subtotal */
+
+#invoiceModal .dialog .grid2 > div:nth-child(8) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(8) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(8) > label::before{ content:"🧮"; } /* Tax */
+
+#invoiceModal .dialog .grid2 > div:nth-child(9) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(9) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(9) > label::before{ content:"🔻"; } /* Discount */
+
+#invoiceModal .dialog .grid2 > div:nth-child(10) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(10) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(10) > label::before{ content:"💵"; } /* Total */
+
+#invoiceModal .dialog .grid2 > div:nth-child(11) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(11) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(11) > label::before{ content:"🗒️"; } /* Notes */
+
+#invoiceModal .dialog .grid2 > div:nth-child(12) > label::before,
+#createInvoiceModal .dialog .grid2 > div:nth-child(12) > label::before,
+[data-modal="create-invoice"] .dialog .grid2 > div:nth-child(12) > label::before{ content:"💳"; } /* Payment */
+
+/* Icon chip styling to match task modal’s look */
+#invoiceModal .dialog label::before,
+#createInvoiceModal .dialog label::before,
+[data-modal="create-invoice"] .dialog label::before{
+  display:inline-flex; align-items:center; justify-content:center;
+  width:18px; height:18px; font-size:14px;
+  border-radius:6px;
+  background: rgba(120,176,228,.10);
+  border: 1px solid rgba(120,176,228,.25);
+  color: #cfe5fb;
+}
+
+/* ---------- “Last-row checkbox/hint” block (flush, no extra spacing) ---------- */
+/* If your invoice form ends with a single checkbox row (e.g., Mark Paid / Recurring), this makes it align flush with the grid above */
+#invoiceModal .dialog .grid2 > div:last-child,
+#createInvoiceModal .dialog .grid2 > div:last-child,
+[data-modal="create-invoice"] .dialog .grid2 > div:last-child{
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+  margin-top: -14px; /* equals grid row gap for seamless join */
+}
+#invoiceModal .dialog .grid2 > div:last-child label,
+#createInvoiceModal .dialog .grid2 > div:last-child label,
+[data-modal="create-invoice"] .dialog .grid2 > div:last-child label{
+  margin: 0;
+  color: var(--text);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+#invoiceModal .dialog .grid2 > div:last-child .hint,
+#createInvoiceModal .dialog .grid2 > div:last-child .hint,
+[data-modal="create-invoice"] .dialog .grid2 > div:last-child .hint{
+  margin: 2px 0 0 26px;
+  font-size: 11px;
+  opacity: .9;
+}
+
+/* Checkbox color/alignment */
+#invoiceModal input[type="checkbox"],
+#createInvoiceModal input[type="checkbox"],
+[data-modal="create-invoice"] input[type="checkbox"]{
+  accent-color: var(--brand);
+  margin: 0;
+  transform: translateY(0);
+}
+
+/* ---------- Small-screen wrapping ---------- */
+@media (max-width: 640px){
+  #invoiceModal .dialog .grid2,
+  #createInvoiceModal .dialog .grid2,
+  [data-modal="create-invoice"] .dialog .grid2{
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  #invoiceModal .dialog .grid2 > div:last-child,
+  #createInvoiceModal .dialog .grid2 > div:last-child,
+  [data-modal="create-invoice"] .dialog .grid2 > div:last-child{
+    flex-wrap: wrap;
+    margin-top: -12px;
+  }
+  #invoiceModal .dialog .grid2 > div:last-child .hint,
+  #createInvoiceModal .dialog .grid2 > div:last-child .hint,
+  [data-modal="create-invoice"] .dialog .grid2 > div:last-child .hint{
+    margin-left: 26px;
+  }
+}
+/* ========== Create Invoice: Email ⟷ Address side-by-side + same look ========== */
+/* 1) Make sure the Address wrapper is NOT forced to full-width */
+#invoiceModal .dialog .grid2 > div:has(#invAddress),
+#createInvoiceModal .dialog .grid2 > div:has(#invAddress),
+[data-modal="create-invoice"] .dialog .grid2 > div:has(#invAddress){
+  grid-column: auto !important;   /* occupy one column, next to Email */
+  display: block !important;
+  margin-top: 0 !important;       /* undo any negative join from “last-row” rules */
+  padding: 2px 0 4px !important;
+}
+
+/* 2) Style the Address textarea like a single-line input (same height as Email) */
+#invoiceModal #invAddress,
+#createInvoiceModal #invAddress,
+[data-modal="create-invoice"] #invAddress{
+  height: 42px !important;
+  min-height: 42px !important;
+  line-height: 42px;          /* vertically centers placeholder text */
+  resize: none;               /* keep it input-like; change to `vertical` if you want */
+  overflow: hidden;           /* avoid scrollbars at default height */
+}
+
+/* Optional: if text should wrap gracefully once user types more, switch to:
+#invoiceModal #invAddress,
+#createInvoiceModal #invAddress,
+[data-modal="create-invoice"] #invAddress{
+  height: 42px; min-height: 42px; resize: vertical; line-height: normal; overflow: auto;
+}
+*/
+
+/* 3) Restrict the “last-row checkbox flush” look ONLY when the last field is a checkbox row */
+#invoiceModal .dialog .grid2 > div:last-child,
+#createInvoiceModal .dialog .grid2 > div:last-child,
+[data-modal="create-invoice"] .dialog .grid2 > div:last-child{
+  grid-column: auto;                  /* default */
+  display: block;
+  background: transparent;
+  border: 0;
+  padding: 2px 0 4px;
+  margin: 0;                          /* no negative join by default */
+}
+
+/* Apply flush style ONLY if the last grid item contains a checkbox (e.g., “Mark Paid”, “Recurring”) */
+#invoiceModal .dialog .grid2 > div:last-child:has(input[type="checkbox"]),
+#createInvoiceModal .dialog .grid2 > div:last-child:has(input[type="checkbox"]),
+[data-modal="create-invoice"] .dialog .grid2 > div:last-child:has(input[type="checkbox"]){
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: -14px; /* match your grid row gap */
+}
+#invoiceModal .dialog .grid2 > div:last-child:has(input[type="checkbox"]) .hint,
+#createInvoiceModal .dialog .grid2 > div:last-child:has(input[type="checkbox"]) .hint,
+[data-modal="create-invoice"] .dialog .grid2 > div:last-child:has(input[type="checkbox"]) .hint{
+  margin: 2px 0 0 26px;
+}
+
+/* ========== Create Invoice — Address alignment + auto-grow ========== */
+
+/* 1) Nudge the Address field wrapper slightly down to align with Email */
+#invoiceModal .dialog .grid2 > div:has(#invAddress),
+#createInvoiceModal .dialog .grid2 > div:has(#invAddress),
+[data-modal="create-invoice"] .dialog .grid2 > div:has(#invAddress){
+  margin-top: 2px !important;  /* tweak to 1–3px if needed */
+}
+
+/* 2) Make Address behave as a proper multi-line textarea,
+      visible first line, and grow downward as content increases */
+#invoiceModal #invAddress,
+#createInvoiceModal #invAddress,
+[data-modal="create-invoice"] #invAddress{
+  /* Remove the previous single-line look */
+  height: auto !important;
+  min-height: 42px !important;      /* same base height as inputs */
+  max-height: 260px;                 /* keep the modal manageable */
+  line-height: 1.4;                  /* readable multi-line text */
+  padding-top: 10px;                 /* keep visual balance with inputs */
+  padding-bottom: 10px;
+  overflow-y: auto;                  /* scroll only if exceeding max-height */
+  resize: vertical;                  /* user can drag taller if needed */
+
+  /* Modern auto-size (supported in current Chromium/Firefox):
+     expands as you press Enter without JS */
+  field-sizing: content;
+}
+
+/* Optional: keep placeholder readable on multi-line */
+#invoiceModal #invAddress::placeholder,
+#createInvoiceModal #invAddress::placeholder,
+[data-modal="create-invoice"] #invAddress::placeholder{
+  line-height: normal;
+  opacity: .75;
+}
+
+
+
+
+
+
 
 
