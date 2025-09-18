@@ -73,13 +73,16 @@ function refreshTitleOptions(){
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleTitleCustom(sel.value);
 
-// Typeahead: update datalist and show input, hide select
+// Typeahead: keep native select visible; show custom input only when "__new__"
 try{
   updateDatalist('titleList', getAllTitles());
   const sel = document.getElementById('fTitleSelect');
   const inp = document.getElementById('fTitleNew');
-  if(sel){ sel.style.display='none'; }
-  if(inp){ inp.style.display=''; initCombo('fTitleNew','fTitle','titleList'); }
+  if (sel) { sel.style.display = ''; }
+  if (inp) {
+    initCombo('fTitleNew','fTitle','titleList');
+    inp.style.display = (sel && sel.value === '__new__') ? '' : 'none';
+  }
 }catch(e){}
 }
 function toggleTitleCustom(val){
@@ -112,13 +115,16 @@ function refreshClientOptions(){
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleClientCustom(sel.value);
 
-// Typeahead: update datalist and show input, hide select
+// Typeahead: keep native select visible; show custom input only when "__new__"
 try{
   updateDatalist('clientList', getAllClients());
   const sel = document.getElementById('fClientSelect');
   const inp = document.getElementById('fClientNew');
-  if(sel){ sel.style.display='none'; }
-  if(inp){ inp.style.display=''; initCombo('fClientNew','fClient','clientList'); }
+  if (sel) { sel.style.display = ''; }
+  if (inp) {
+    initCombo('fClientNew','fClient','clientList');
+    inp.style.display = (sel && sel.value === '__new__') ? '' : 'none';
+  }
 }catch(e){}
 }
 function toggleClientCustom(val){

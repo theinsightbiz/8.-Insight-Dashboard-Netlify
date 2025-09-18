@@ -1368,6 +1368,72 @@ select optgroup,
   opacity: .9;
 }
 
+/* Make the custom combobox popup white inside Add Task modal */
+#taskModal .combo-menu {
+  background: #ffffff !important;
+  border-color: #d0d7de !important;
+  box-shadow: 0 12px 40px rgba(0,0,0,.20) !important;
+}
+
+/* Make items dark text and give a subtle blue hover/active */
+#taskModal .combo-item {
+  color: #111 !important;
+}
+#taskModal .combo-item[aria-selected="true"],
+#taskModal .combo-item:hover {
+  background: #e8f0ff !important;   /* light blue hover */
+  color: #111 !important;
+}
+
+/* Tidy delete button color on white */
+#taskModal .combo-del {
+  color: #b42318 !important;         /* subtle red */
+}
+#taskModal .combo-del:hover {
+  background: #fdeaea !important;
+  color: #a10d0f !important;
+}
+
+/* Force light widgets only in Add Task modal (beats :root { color-scheme: dark; }) */
+#taskModal { color-scheme: light !important; }
+
+/* Ensure white panel and dark text for the two selects */
+#taskModal #fClientSelect,
+#taskModal #fTitleSelect,
+#taskModal #fClientSelect option,
+#taskModal #fTitleSelect option {
+  background: #ffffff !important;
+  color: #111 !important;
+  border-color: #d0d7de !important;
+}
+
+#cancelBtn:hover,
+#saveBtn:hover,
+#previewInvoiceBtn:hover,
+#downloadPdfBtn:hover {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: #fff !important;
+}
+
+/* === FINAL OVERRIDES: enforce brand-blue hover for specific buttons === */
+#taskModal #cancelBtn:hover,
+#taskModal .dialog footer #cancelBtn:hover,
+#taskModal #saveBtn:hover,
+#taskModal .dialog footer #saveBtn:hover {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: #fff !important;
+}
+
+#invoiceModal #downloadPdfBtn:hover,
+#invoiceModal .dialog footer #downloadPdfBtn:hover,
+#invoiceModal .dialog .row-actions #downloadPdfBtn:hover {
+  background-color: var(--brand) !important;
+  border-color: var(--brand) !important;
+  color: #fff !important;
+}
+
 
 
 
