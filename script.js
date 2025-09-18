@@ -102,16 +102,16 @@ function refreshTitleOptions(){
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleTitleCustom(sel.value);
 
-// Typeahead: ALWAYS use the input with suggestions; keep <select> hidden
+// Typeahead: ALWAYS use the input with suggestions; keep <select> hidden  (TITLE)
 try{
-  updateDatalist('clientList', getAllClients());
-  const sel = document.getElementById('fClientSelect');
-  const inp = document.getElementById('fClientNew');
+  updateDatalist('titleList', getAllTitles());
+  const sel = document.getElementById('fTitleSelect');
+  const inp = document.getElementById('fTitleNew');
   if (sel) sel.style.display = 'none';     // hide the select entirely
   if (inp) {
     inp.style.display = '';                 // show the input always
-    initCombo('fClientNew','fClient','clientList');               // keeps hidden #fClient in sync
-    enableSuggestWithAdd('fClientNew','clientList', getAllClients); // live "Add …" affordance
+    initCombo('fTitleNew','fTitle','titleList');                   // keep hidden #fTitle in sync
+    enableSuggestWithAdd('fTitleNew','titleList', getAllTitles);   // “Add …” affordance
   }
 }catch(e){}
 }
@@ -145,16 +145,16 @@ function refreshClientOptions(){
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleClientCustom(sel.value);
 
-// Typeahead: ALWAYS use the input with suggestions; keep <select> hidden
+// Typeahead: ALWAYS use the input with suggestions; keep <select> hidden  (CLIENT)
 try{
-  updateDatalist('titleList', getAllTitles());
-  const sel = document.getElementById('fTitleSelect');
-  const inp = document.getElementById('fTitleNew');
+  updateDatalist('clientList', getAllClients());
+  const sel = document.getElementById('fClientSelect');
+  const inp = document.getElementById('fClientNew');
   if (sel) sel.style.display = 'none';     // hide the select entirely
   if (inp) {
     inp.style.display = '';                 // show the input always
-    initCombo('fTitleNew','fTitle','titleList');                 // keeps hidden #fTitle in sync
-    enableSuggestWithAdd('fTitleNew','titleList', getAllTitles); // live "Add …" affordance
+    initCombo('fClientNew','fClient','clientList');                 // keep hidden #fClient in sync
+    enableSuggestWithAdd('fClientNew','clientList', getAllClients); // “Add …” affordance
   }
 }catch(e){}
 }
