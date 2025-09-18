@@ -270,7 +270,6 @@ select optgroup,
 
 /* === Combobox styling (Client/Title) === */
 .combo-wrap{ position:relative; }
-
 .combo-input{
   width:100%;
   border-radius:10px;
@@ -280,15 +279,13 @@ select optgroup,
   padding:8px 10px;
   outline:none;
 }
-.combo-input:focus{
-  box-shadow:0 0 0 3px rgba(120,176,228,.30);
-}
+.combo-input:focus{ box-shadow:0 0 0 3px rgba(120,176,228,.30); }
 
 .combo-menu{
   position:absolute;
   top:calc(100% + 6px);
   left:0; right:0;
-  z-index: 9999;
+  z-index:9999;
   background:var(--panel, #0f1117);
   border:1px solid var(--line, #2b2f3a);
   border-radius:12px;
@@ -299,49 +296,26 @@ select optgroup,
 }
 
 .combo-item{
-  display:flex;
-  align-items:center;
-  gap:8px;
-  padding:8px 10px;
-  border-radius:8px;
-  cursor:pointer;
-  user-select:none;
+  display:flex; align-items:center; gap:8px;
+  padding:8px 10px; border-radius:8px; cursor:pointer; user-select:none;
   color:var(--text, #e8ecf2);
 }
 .combo-item .text{
-  flex:1 1 auto;
-  min-width:0;
-  white-space:nowrap;
-  overflow:hidden;
-  text-overflow:ellipsis;
+  flex:1 1 auto; min-width:0;
+  white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
 }
 .combo-item .match{ font-weight:700; }
+.combo-item[aria-selected="true"], .combo-item:hover{ background:rgba(120,176,228,.12); }
 
-.combo-item[aria-selected="true"],
-.combo-item:hover{
-  background:rgba(120,176,228,.12);
-}
-
-/* inline delete button (🗑) */
 .combo-del{
   flex:0 0 auto;
-  border:none;
-  background:transparent;
-  color:#ff9fa0;
-  font-size:14px;
-  line-height:1;
-  padding:6px 8px;
-  border-radius:6px;
-  cursor:pointer;
+  border:none; background:transparent;
+  color:#ff9fa0; font-size:14px; line-height:1;
+  padding:6px 8px; border-radius:6px; cursor:pointer;
 }
-.combo-del:hover{
-  background:rgba(255, 80, 80, .10);
-  color:#ff6b6f;
-}
+.combo-del:hover{ background:rgba(255,80,80,.10); color:#ff6b6f; }
 
-.combo-empty{
-  padding:10px;
-  color:var(--muted, #9aa3b2);
-}
+.combo-empty{ padding:10px; color:var(--muted, #9aa3b2); }
+
 
 
