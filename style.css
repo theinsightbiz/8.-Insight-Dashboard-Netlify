@@ -1010,7 +1010,363 @@ select optgroup,
   opacity: .75;
 }
 
+/* =========================================================
+   LIGHT THEME — like reference: white cards, soft borders,
+   subtle shadows, blue accents. No neon, no dark surfaces.
+   Scope: #taskModal, #invoiceModal, #createInvoiceModal,
+          [data-modal="create-invoice"]
+========================================================= */
 
+/* ----- Palette (neutral + blue accents) ----- */
+#taskModal,
+#invoiceModal,
+#createInvoiceModal,
+[data-modal="create-invoice"]{
+  --surface: #ffffff;                  /* card + inputs */
+  --surface-2: #ffffff;                /* sections */
+  --backdrop: rgba(15, 23, 42, .28);   /* soft dim background */
+  --line: #e6edf5;                     /* dividers, borders */
+  --line-strong: #d9e3ef;
+  --text: #0f172a;                     /* main text (blue-ink) */
+  --muted: #6b7280;                    /* helper text */
+  --brand: #3ABEF9;                    /* light blue */
+  --brand-2: #22D3EE;                  /* cyan */
+}
+
+/* ----- Backdrop (no neon) ----- */
+#taskModal.modal,
+#invoiceModal.modal,
+#createInvoiceModal.modal,
+[data-modal="create-invoice"].modal{
+  background: var(--backdrop);
+}
+
+/* ----- Dialog shell (white card) ----- */
+#taskModal > .dialog,
+#invoiceModal > .dialog,
+#createInvoiceModal > .dialog,
+[data-modal="create-invoice"] > .dialog{
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 20px;                  /* keep your radius */
+  box-shadow: 0 8px 32px rgba(2, 6, 23, .08);
+  color: var(--text);
+}
+
+/* Strip any old gradients or glows that may linger */
+#taskModal > .dialog,
+#invoiceModal > .dialog,
+#createInvoiceModal > .dialog,
+[data-modal="create-invoice"] > .dialog{
+  background-image: none !important;
+  box-shadow: 0 8px 32px rgba(2, 6, 23, .08) !important;
+}
+
+/* ----- Header (thin divider, no gloss) ----- */
+#taskModal .dialog > header,
+#invoiceModal .dialog > header,
+#createInvoiceModal .dialog > header,
+[data-modal="create-invoice"] .dialog > header{
+  background: transparent;
+  border-bottom: 1px solid var(--line);
+}
+
+/* Heading + icon (flat, aligned) */
+#taskModal .dialog h2,
+#invoiceModal .dialog h2,
+#createInvoiceModal .dialog h2,
+[data-modal="create-invoice"] .dialog h2{
+  color: var(--text);
+}
+#taskModal .dialog h2::before,
+#invoiceModal .dialog h2::before,
+#createInvoiceModal .dialog h2::before,
+[data-modal="create-invoice"] .dialog h2::before{
+  background-color: var(--brand);      /* flat light-blue icon */
+  box-shadow: none;                    /* remove neon halo */
+}
+
+/* ----- Labels & helper text (neutral greys) ----- */
+#taskModal .dialog label,
+#invoiceModal .dialog label,
+#createInvoiceModal .dialog label,
+[data-modal="create-invoice"] .dialog label{
+  color: var(--muted);
+  text-shadow: none;
+}
+#taskModal .hint,
+#invoiceModal .hint,
+#createInvoiceModal .hint,
+[data-modal="create-invoice"] .hint{
+  color: #94a3b8;                      /* softer helper text */
+}
+
+/* ----- Inputs / selects / textareas (white fields) ----- */
+#taskModal .dialog input,
+#taskModal .dialog select,
+#taskModal .dialog textarea,
+#invoiceModal .dialog input,
+#invoiceModal .dialog select,
+#invoiceModal .dialog textarea,
+#createInvoiceModal .dialog input,
+#createInvoiceModal .dialog select,
+#createInvoiceModal .dialog textarea,
+[data-modal="create-invoice"] .dialog input,
+[data-modal="create-invoice"] .dialog select,
+[data-modal="create-invoice"] .dialog textarea{
+  background: var(--surface);
+  border: 1px solid #e2e8f0;           /* light neutral border */
+  color: var(--text);
+  box-shadow: none;                     /* no inset shine */
+}
+
+/* Focus: simple light-blue ring (no glow) */
+#taskModal .dialog input:focus,
+#taskModal .dialog select:focus,
+#taskModal .dialog textarea:focus,
+#invoiceModal .dialog input:focus,
+#invoiceModal .dialog select:focus,
+#invoiceModal .dialog textarea:focus,
+#createInvoiceModal .dialog input:focus,
+#createInvoiceModal .dialog select:focus,
+#createInvoiceModal .dialog textarea:focus,
+[data-modal="create-invoice"] .dialog input:focus,
+[data-modal="create-invoice"] .dialog select:focus,
+[data-modal="create-invoice"] .dialog textarea:focus{
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px rgba(58,190,249,.25);
+}
+
+/* Placeholders readable on white */
+#taskModal ::placeholder,
+#invoiceModal ::placeholder,
+#createInvoiceModal ::placeholder,
+[data-modal="create-invoice"] ::placeholder{
+  color: #9aa7b5;
+}
+
+/* Select dropdown panels (white) */
+#taskModal select option,
+#invoiceModal select option,
+#createInvoiceModal select option,
+[data-modal="create-invoice"] select option{
+  background: #ffffff;
+  color: var(--text);
+}
+
+/* ----- Inline label icon chips (subtle, like badges) ----- */
+#taskModal .dialog label::before,
+#invoiceModal .dialog label::before,
+#createInvoiceModal .dialog label::before,
+[data-modal="create-invoice"] .dialog label::before{
+  background: #e8f6ff;                 /* pale light-blue fill */
+  border: 1px solid #cfe9f9;            /* soft edge */
+  color: var(--brand);                  /* icon glyph color */
+}
+
+/* ----- Section dividers / cards inside body (white-on-white) ----- */
+#taskModal .dialog > .body,
+#invoiceModal .dialog > .body,
+#createInvoiceModal .dialog > .body,
+[data-modal="create-invoice"] .dialog > .body{
+  background: var(--surface-2);
+}
+
+/* ----- Footer & buttons (flat, no neon) ----- */
+#taskModal .dialog > footer,
+#invoiceModal .dialog > footer,
+#createInvoiceModal .dialog > footer,
+[data-modal="create-invoice"] .dialog > footer{
+  background: #ffffff;
+  border-top: 1px solid var(--line);
+}
+
+/* Primary button: light-blue → cyan subtle gradient (optional);
+   switch to flat light-blue if you want absolutely no gradient. */
+#taskModal .dialog > footer .btn.primary,
+#invoiceModal .dialog > footer .btn.primary,
+#createInvoiceModal .dialog > footer .btn.primary,
+[data-modal="create-invoice"] .dialog > footer .btn.primary{
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%) !important;
+  border-color: transparent !important;
+  color: #ffffff !important;
+  box-shadow: none !important;
+}
+#taskModal .dialog > footer .btn.primary:hover,
+#invoiceModal .dialog > footer .btn.primary:hover,
+#createInvoiceModal .dialog > footer .btn.primary:hover,
+[data-modal="create-invoice"] .dialog > footer .btn.primary:hover{
+  filter: brightness(1.05);
+}
+
+/* If you prefer completely flat primary button, uncomment:
+#taskModal .dialog > footer .btn.primary,
+#invoiceModal .dialog > footer .btn.primary,
+#createInvoiceModal .dialog > footer .btn.primary,
+[data-modal="create-invoice"] .dialog > footer .btn.primary{
+  background: var(--brand) !important;
+}
+*/
+
+#taskModal .dialog > footer .btn:not(.primary),
+#invoiceModal .dialog > footer .btn:not(.primary),
+#createInvoiceModal .dialog > footer .btn:not(.primary),
+[data-modal="create-invoice"] .dialog > footer .btn:not(.primary){
+  background: #f8fafc;
+  border-color: #e5edf6;
+  color: #334155;
+}
+#taskModal .dialog > footer .btn:not(.primary):hover,
+#invoiceModal .dialog > footer .btn:not(.primary):hover,
+#createInvoiceModal .dialog > footer .btn:not(.primary):hover,
+[data-modal="create-invoice"] .dialog > footer .btn:not(.primary):hover{
+  background: #eef6ff !important;
+  border-color: #d8ecfb !important;
+}
+
+/* ----- Checkbox / date icon contrast ----- */
+#taskModal input[type="checkbox"],
+#invoiceModal input[type="checkbox"],
+#createInvoiceModal input[type="checkbox"],
+[data-modal="create-invoice"] input[type="checkbox"]{
+  accent-color: var(--brand);
+}
+#taskModal input[type="date"]::-webkit-calendar-picker-indicator,
+#invoiceModal input[type="date"]::-webkit-calendar-picker-indicator,
+#createInvoiceModal input[type="date"]::-webkit-calendar-picker-indicator,
+[data-modal="create-invoice"] input[type="date"]::-webkit-calendar-picker-indicator{
+  filter: none; /* native dark icon reads fine on white */
+}
+
+/* ---------- 1) ADD TASK — Client Name & Task Title boxes ---------- */
+/* Common wrappers used by custom selects (covering native and plugin UIs) */
+#taskModal #fClientSelect,
+#taskModal #fTitleSelect,
+#taskModal .select-wrapper,
+#taskModal .dropdown-toggle,
+#taskModal .choices__inner,
+#taskModal .select2-container .select2-selection--single{
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+
+/* If you allow typing “New client / New title” fields */
+#taskModal #fClientNew,
+#taskModal #fTitleNew{
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+}
+
+/* Their dropdown panels/lists should also be white */
+#taskModal .select2-container .select2-dropdown,
+#taskModal .choices__list--dropdown,
+#taskModal .dropdown-menu,
+#taskModal .menu,
+#taskModal .listbox{
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: 0 8px 24px rgba(2,6,23,.06) !important; /* subtle pop */
+}
+
+/* Options hover/selected states (neutral blue only) */
+#taskModal .choices__list--dropdown .choices__item--selectable.is-highlighted,
+#taskModal .dropdown-menu li:hover,
+#taskModal .menu .item:hover,
+#taskModal .listbox [role="option"][aria-selected="true"]{
+  background: #eef6ff !important;
+  color: #0f172a !important;
+}
+
+/* ---------- 2) ADD TASK — Save button box → white ---------- */
+#taskModal .dialog footer .btn.primary,
+#taskModal #saveBtn{
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #dbe7f5 !important;
+  box-shadow: none !important;
+}
+#taskModal .dialog footer .btn.primary:hover,
+#taskModal #saveBtn:hover{
+  background: #eef6ff !important;
+  border-color: #cfe1f3 !important;
+}
+
+/* Keep Cancel looking consistent on white */
+#taskModal .dialog footer .btn:not(.primary){
+  background: #f8fafc !important;
+  border: 1px solid #e5edf6 !important;
+  color: #334155 !important;
+}
+#taskModal .dialog footer .btn:not(.primary):hover{
+  background: #eef6ff !important;
+}
+
+/* ---------- 3) CREATE INVOICE — tool buttons to white ---------- */
+/* Covers typical IDs/classes; if your HTML uses different ones, the
+   generic .btn rules below still apply inside invoice modals. */
+#invoiceModal #addRowBtn,
+#invoiceModal #previewBtn,
+#invoiceModal #downloadPdfBtn,
+#createInvoiceModal #addRowBtn,
+#createInvoiceModal #previewBtn,
+#createInvoiceModal #downloadPdfBtn{
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+  box-shadow: none !important;
+}
+
+/* Generic catch-all for invoice toolbar/action buttons */
+#invoiceModal .dialog .btn,
+#createInvoiceModal .dialog .btn{
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid #e2e8f0;
+  box-shadow: none;
+}
+#invoiceModal .dialog .btn:hover,
+#createInvoiceModal .dialog .btn:hover{
+  background: #eef6ff;
+  border-color: #d7e7fb;
+}
+
+/* If any of those three buttons are rendered as <a> tags with “btn” class */
+#invoiceModal .dialog a.btn,
+#createInvoiceModal .dialog a.btn{
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border: 1px solid #e2e8f0 !important;
+}
+
+/* Dropdowns inside the invoice modals should also be white */
+#invoiceModal .select2-container .select2-selection--single,
+#invoiceModal .choices__inner,
+#invoiceModal .dropdown-menu,
+#createInvoiceModal .select2-container .select2-selection--single,
+#createInvoiceModal .choices__inner,
+#createInvoiceModal .dropdown-menu{
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #0f172a !important;
+  box-shadow: none !important;
+}
+#invoiceModal .dropdown-menu li:hover,
+#createInvoiceModal .dropdown-menu li:hover{
+  background: #eef6ff !important;
+}
+
+/* Ensure icons within white buttons stay readable */
+#taskModal .btn svg,
+#invoiceModal .btn svg,
+#createInvoiceModal .btn svg{
+  stroke: currentColor;
+  fill: currentColor;
+  opacity: .9;
+}
 
 
 
