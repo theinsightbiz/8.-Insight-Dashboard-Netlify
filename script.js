@@ -1051,7 +1051,7 @@ function parseInvoiceText(txt){
 
   // Totals
   const subTotalNum   = pickMoneyAfter('Sub\\s*Total');
-  const discountNum   = pickMoneyAfter('Less:\\s*Discount');
+  const discountNum = pickMoneyAfter('Less:\\s*(Discount|Advance)');
   const invoiceAmtNum = pickMoneyAfter('Invoice\\s*Amount');
 
   return {
