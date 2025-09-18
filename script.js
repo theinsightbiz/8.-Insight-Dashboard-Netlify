@@ -41,6 +41,35 @@ function initCombo(inputId, hiddenId, listId){
   sync();
 }
 
+/* Make datalist behave like a suggestions menu with an "Add ..." affordance */
+function enableSuggestWithAdd(inputId, listId, itemsProvider){
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  const normalize = s => String(s||'').trim();
+  const eq = (a,b) => normalize(a).toLowerCase() === normalize(b).toLowerCase();
+
+  function refresh(){
+    const term = normalize(input.value);
+    let items = (typeof itemsProvider === 'function' ? (itemsProvider()||[]) : []).slice();
+
+    // If user typed something not present, append it as a candidate
+    if (term && !items.some(v => eq(v, term))) items.push(term);
+
+    // Re-render the datalist with a label for the "add" candidate
+    const dl = ensureDatalist(listId);
+    dl.innerHTML = items.map(v => {
+      if (term && eq(v, term)) {
+        return `<option value="${esc(v)}" label="➕ Add “${esc(v)}”"></option>`;
+      }
+      return `<option value="${esc(v)}"></option>`;
+    }).join('');
+  }
+
+  // Update suggestions as user interacts
+  input.addEventListener('focus', refresh);
+  input.addEventListener('input', refresh);
+}
 
 function fmtDateDDMMYYYY(iso){ if(!iso) return ''; const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
 function parseDDMM(dateStr){ const m = dateStr && dateStr.match(/^(\d{2})\/(\d{2})\/(\d{4})$/); return m ? `${m[3]}-${m[2]}-${m[1]}` : ''; }
@@ -73,15 +102,16 @@ function refreshTitleOptions(){
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleTitleCustom(sel.value);
 
-// Typeahead: keep native select visible; show custom input only when "__new__"
+// Typeahead: ALWAYS use the input with suggestions; keep <select> hidden
 try{
-  updateDatalist('titleList', getAllTitles());
-  const sel = document.getElementById('fTitleSelect');
-  const inp = document.getElementById('fTitleNew');
-  if (sel) { sel.style.display = ''; }
+  updateDatalist('clientList', getAllClients());
+  const sel = document.getElementById('fClientSelect');
+  const inp = document.getElementById('fClientNew');
+  if (sel) sel.style.display = 'none';     // hide the select entirely
   if (inp) {
-    initCombo('fTitleNew','fTitle','titleList');
-    inp.style.display = (sel && sel.value === '__new__') ? '' : 'none';
+    inp.style.display = '';                 // show the input always
+    initCombo('fClientNew','fClient','clientList');               // keeps hidden #fClient in sync
+    enableSuggestWithAdd('fClientNew','clientList', getAllClients); // live "Add …" affordance
   }
 }catch(e){}
 }
@@ -115,15 +145,16 @@ function refreshClientOptions(){
   if(cur && [...sel.options].some(o=>o.value===cur)){ sel.value = cur; }
   toggleClientCustom(sel.value);
 
-// Typeahead: keep native select visible; show custom input only when "__new__"
+// Typeahead: ALWAYS use the input with suggestions; keep <select> hidden
 try{
-  updateDatalist('clientList', getAllClients());
-  const sel = document.getElementById('fClientSelect');
-  const inp = document.getElementById('fClientNew');
-  if (sel) { sel.style.display = ''; }
+  updateDatalist('titleList', getAllTitles());
+  const sel = document.getElementById('fTitleSelect');
+  const inp = document.getElementById('fTitleNew');
+  if (sel) sel.style.display = 'none';     // hide the select entirely
   if (inp) {
-    initCombo('fClientNew','fClient','clientList');
-    inp.style.display = (sel && sel.value === '__new__') ? '' : 'none';
+    inp.style.display = '';                 // show the input always
+    initCombo('fTitleNew','fTitle','titleList');                 // keeps hidden #fTitle in sync
+    enableSuggestWithAdd('fTitleNew','titleList', getAllTitles); // live "Add …" affordance
   }
 }catch(e){}
 }
