@@ -238,7 +238,7 @@ async function removeSkipsForSeries(recurringId){
 }
 
 /* ---------- Recurring generation (duplicate-proof) ---------- */
-const HORIZON_MONTHS = 6;
+const HORIZON_MONTHS = 9;
 let isGenerating = false;
 
 async function ensureRecurringInstances() {
@@ -272,7 +272,8 @@ async function ensureRecurringInstances() {
         tpl.recurringId = rid; tpl.recurDay = recurDay;
       }
 
-      for (let i = 0; i < HORIZON_MONTHS; i++) {
+      const step = tpl.recurQuarterly ? 3 : 1;
+      for (let i = 0; i < HORIZON_MONTHS; i += step) {
         const y = startY + Math.floor((startM + i) / 12);
         const m = (startM + i) % 12;
         const period = `${y}-${String(m+1).padStart(2, '0')}`;
@@ -295,6 +296,7 @@ async function ensureRecurringInstances() {
           notes: tpl.notes || '',
           recur: true,
           recurDay,
+          recurQuarterly: !!tpl.recurQuarterly,
           recurringId: rid,
           deadline,
           createdAt: Date.now(),
@@ -391,7 +393,7 @@ function formatMonthLabel(m){
 function rowHtml(t){
   const out = (Number(t.fee||0) - Number(t.advance||0));
   const overdue = t.deadline && t.deadline < todayStr() && t.status !== 'Completed';
-  const recBadge = t.recur ? ' <span class="badge recurring" title="Recurring monthly">Monthly</span>' : '';
+  const recBadge = t.recur ? ` <span class="badge recurring" title="${t.recurQuarterly?'Recurring quarterly':'Recurring monthly'}">${t.recurQuarterly?'Quarterly':'Monthly'}</span>` : '';
   return `<tr class="row" data-id="${esc(t.id)}">
     <td><input type="checkbox" class="row-select" data-id="${esc(t.id)}" onchange="toggleSelect('${esc(t.id)}', this.checked)"></td>
     <td title="${esc(t.notes||'')}"><strong>${esc(t.client)}</strong></td>
@@ -518,6 +520,7 @@ $('#addTaskBtn') && ($('#addTaskBtn').onclick = async ()=>{
     taskForm.reset(); delete taskForm.dataset.editId;
     $('#fDeadline') && ($('#fDeadline').value = todayStr());
     openModal('New Task');
+    try{ document.getElementById('fRecurringQ').checked = false; }catch(e){}
   } else {
     try { await createTaskByPrompt(); }
     catch(e){ alert('Add failed: ' + (e?.message||e)); }
@@ -566,6 +569,7 @@ function editTask(id){
     $('#fInvoiceStatus').value = t.invoiceStatus||'';
     $('#fNotes').value = t.notes||'';
     $('#fRecurring') && ($('#fRecurring').checked = !!t.recur && !t.period);
+    $('#fRecurringQ') && ($('#fRecurringQ').checked = !!t.recurQuarterly && !t.period);
   } else {
     editTaskByPrompt(t);
   }
@@ -625,6 +629,7 @@ if(!_titleVal){ e.preventDefault(); alert('Please select a Task Title or enter a
     const existing = editId ? tasks.find(x=>x.id===editId) : null;
 
     const isRecurringTemplate = $('#fRecurring')?.checked;
+    const isRecurringQuarterly = $('#fRecurringQ')?.checked;
     const dval = $('#fDeadline')?.value || '';
 
     const data = {
@@ -646,7 +651,7 @@ if(!_titleVal){ e.preventDefault(); alert('Please select a Task Title or enter a
         const wasTemplate = !!existing.recur && !existing.period;
         if (wasTemplate){
           const recurDay = dval ? Number(dval.slice(8,10)) : new Date().getDate();
-          const updates = { ...data, recur:true, recurDay, recurringId: existing.recurringId || (crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())) };
+          const updates = { ...data, recur:true, recurDay, recurringId: existing.recurringId || (crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random())), recurQuarterly: !!isRecurringQuarterly };
           await tasksRef.child(existing.id).update(updates);
           const today = todayStr();
           const fut = tasks.filter(t=> t.recurringId===updates.recurringId && t.period && t.deadline>=today);
@@ -656,11 +661,11 @@ if(!_titleVal){ e.preventDefault(); alert('Please select a Task Title or enter a
           await tasksRef.child(existing.id).update(data);
         }
       } else {
-        if (isRecurringTemplate){
+        if (isRecurringTemplate || isRecurringQuarterly){
           const recurDay = dval ? Number(dval.slice(8,10)) : new Date().getDate();
           const rid = crypto.randomUUID ? crypto.randomUUID() : String(Date.now()+Math.random());
           const id = rid;
-          const tpl = { id, createdAt: Date.now(), ...data, recur:true, recurDay, recurringId: rid, period: null };
+          const tpl = { id, createdAt: Date.now(), ...data, recur:true, recurDay, recurringId: rid, period: null, ...(isRecurringQuarterly?{recurQuarterly:true}:{}) };
           await tasksRef.child(id).set(tpl);
           await ensureRecurringInstances();
         } else {
