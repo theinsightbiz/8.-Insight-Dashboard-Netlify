@@ -464,6 +464,36 @@ async function delTask(id){
 }
 window.delTask = delTask;
 
+// Single-task delete with password+confirm (same flow as Bulk Delete)
+async function delTaskWithPassword(id){
+  const t = tasks.find(x => x.id === id);
+  if (!t) { alert('Task not found.'); return; }
+
+  const pass = prompt('Enter password to delete this task:');
+  if (pass !== '14Dec@1998'){ alert('Incorrect password.'); return; }
+
+  if (!confirm('Delete 1 task? This cannot be undone.')) return;
+
+  const toDelete = new Set([id]);
+
+  // If it’s a recurring template, delete its future instances too
+  if (t.recur && !t.period && t.recurringId){
+    const inst = tasks.filter(x => x.recurringId === t.recurringId && x.period);
+    inst.forEach(i => toDelete.add(i.id));
+    await removeSkipsForSeries(t.recurringId).catch(()=>{});
+  }
+  // If it’s a recurring instance, mark skip for that period
+  else if (t.recur && t.period && t.recurringId){
+    await addSkip(t.recurringId, t.period).catch(()=>{});
+  }
+
+  for (const delId of toDelete){
+    await tasksRef.child(delId).remove().catch(()=>{});
+    selectedIds.delete(delId);
+  }
+}
+window.delTaskWithPassword = delTaskWithPassword;
+
 /* ---------- Modal handling ---------- */
 const modal = $('#taskModal');
 const taskForm = $('#taskForm');
@@ -1615,7 +1645,7 @@ function renderGstModal(selectedClient){
         </div>
         <div class="gst-col-actions">
           <button class="btn ghost" onclick="editTask('${esc(t.id)}')">Edit</button>
-          <button class="btn ghost danger" onclick="delTask('${esc(t.id)}')">Delete</button>
+          <button class="btn ghost danger" onclick="delTaskWithPassword('${esc(t.id)}')">Delete</button>
         </div>
       </div>`;
   }).join('');
