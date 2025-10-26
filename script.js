@@ -1548,6 +1548,7 @@ function renderGstModal(selectedClient){
   const headEl  = document.getElementById('gstClientHeading');
   if(!listEl || !detailEl || !headEl) return;
 
+  // Left column: client list
   const clients = clientsWithRecurring();
   listEl.innerHTML = clients.map(c=>{
     const count = recurringInstances().filter(t=>t.client===c).length;
@@ -1561,6 +1562,7 @@ function renderGstModal(selectedClient){
     it.onclick = () => renderGstModal(it.dataset.client);
   });
 
+  // Right column: details
   if (!selectedClient){
     headEl.textContent = 'Details';
     detailEl.className = 'gst-tasks-empty';
@@ -1581,36 +1583,39 @@ function renderGstModal(selectedClient){
 
   detailEl.className = '';
   detailEl.innerHTML = items.map(t=>{
-    const out = (Number(t.fee||0) - Number(t.advance||0));
+    const outstanding = (Number(t.fee||0) - Number(t.advance||0));
     const badge = t.recurQuarterly
       ? `<span class="badge recurring" title="Recurring quarterly">Quarterly</span>`
       : `<span class="badge recurring" title="Recurring monthly">Monthly</span>`;
 
-    // Same option sets your main grid uses:
+    // Same option sets as the main table
     const statusOpts = ['Not Started','In Progress','Waiting Client','On Hold','Completed']
       .map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('');
 
     const invoiceOpts = ['Not Raised','Sent','Paid','Partially Paid']
       .map(s=>`<option ${s===(t.invoiceStatus||'Not Raised')?'selected':''}>${s}</option>`).join('');
 
+    // Columns: Title | In-Charge | Deadline | Fee | Outstanding | Status | Invoice | Actions
     return `
       <div class="gst-task" data-id="${esc(t.id)}" title="${esc(t.notes||'')}">
-        <div><strong>${esc(t.title||'')}</strong> ${badge}</div>
-        <div>${fmtDateDDMMYYYY(t.deadline)||''}</div>
-        <div class="money">₹ ${fmtMoney(t.fee||0)}</div>
-        <div class="money">₹ ${fmtMoney(out)}</div>
-        <div>
+        <div class="gst-col-title"><strong>${esc(t.title||'')}</strong> ${badge}</div>
+        <div class="gst-col-assignee">${esc(t.assignee || '')}</div>
+        <div class="gst-col-deadline">${fmtDateDDMMYYYY(t.deadline)||''}</div>
+        <div class="gst-col-fee money">₹ ${fmtMoney(t.fee||0)}</div>
+        <div class="gst-col-out money">₹ ${fmtMoney(outstanding)}</div>
+        <div class="gst-col-status">
           <select class="status" onchange="changeStatus('${esc(t.id)}', this.value)">
             ${statusOpts}
           </select>
         </div>
-        <div>
+        <div class="gst-col-inv">
           <select class="status" onchange="changeInvoiceStatus('${esc(t.id)}', this.value)">
             ${invoiceOpts}
           </select>
         </div>
-        <div>
+        <div class="gst-col-actions">
           <button class="btn ghost" onclick="editTask('${esc(t.id)}')">Edit</button>
+          <button class="btn ghost danger" onclick="delTask('${esc(t.id)}')">Delete</button>
         </div>
       </div>`;
   }).join('');
