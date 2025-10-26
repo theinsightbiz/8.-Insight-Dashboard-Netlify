@@ -53,6 +53,7 @@
         <span class="pill">Tasks • Deadlines • Billing</span>
       </div>
       <div class="actions">
+        <button class="btn icon" id="gstBtn" aria-haspopup="dialog">🧾 GST</button>
         <button class="btn icon primary" id="addTaskBtn" aria-haspopup="dialog">➕ Add Task</button>
         <button class="btn icon" id="createInvoiceBtn" aria-haspopup="dialog">🧾 Create Invoice</button>
         <button class="btn icon ghost" id="bulkDeleteBtn" title="Delete selected">🗑️ Bulk Delete</button>
@@ -255,6 +256,28 @@
           <button class="btn primary" type="submit" id="saveBtn">Save Task</button>
         </footer>
       </form>
+    </div>
+  </div>
+
+  <!-- 🔵 NEW: GST Modal (Client list + recurring tasks) -->
+  <div class="modal" id="gstModal" role="dialog" aria-modal="true" aria-labelledby="gstModalTitle">
+    <div class="dialog">
+      <header><h2 id="gstModalTitle">GST – Recurring (Monthly / Quarterly)</h2></header>
+      <div class="body">
+        <div class="gst-grid">
+          <aside class="gst-clients">
+            <h3>Clients</h3>
+            <div id="gstClientList" class="gst-list"></div>
+          </aside>
+          <section class="gst-detail">
+            <h3 id="gstClientHeading">Details</h3>
+            <div id="gstClientTasks" class="gst-tasks-empty">Select a client to view tasks.</div>
+          </section>
+        </div>
+      </div>
+      <footer>
+        <button type="button" class="btn ghost" id="gstCloseBtn">Close</button>
+      </footer>
     </div>
   </div>
 

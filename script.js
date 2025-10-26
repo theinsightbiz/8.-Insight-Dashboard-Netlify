@@ -325,7 +325,9 @@ function render(){
   const af = $('#assigneeFilter')?.value || '';
   const mf = $('#monthFilter')?.value || '';
 
-  let filtered = tasks.filter(t => !(t.recur && !t.period));
+  // 🔵 CHANGE: Exclude ALL recurring tasks (templates AND instances) from main list
+  let filtered = tasks.filter(t => !t.recur);
+
   filtered = filtered.filter(t => {
     const matchQ = !q || [t.client,t.title,t.assignee,(t.notes||'')].some(x => String(x||'').toLowerCase().includes(q));
     const matchP = !pf || t.priority === pf;
@@ -346,7 +348,8 @@ function render(){
     return 0;
   });
 
-  const assignees = [...new Set(tasks.filter(t=>!(t.recur && !t.period)).map(t=>t.assignee).filter(Boolean))].sort();
+  // 🔵 Assignee filter from non-recurring only
+  const assignees = [...new Set(tasks.filter(t=>!t.recur).map(t=>t.assignee).filter(Boolean))].sort();
   const afSel = $('#assigneeFilter');
   if (afSel) {
     const cur = afSel.value;
@@ -367,7 +370,8 @@ function render(){
   }
 
   const now = todayStr();
-  const visible = tasks.filter(t=>!(t.recur && !t.period));
+  // 🔵 KPIs from non-recurring only
+  const visible = tasks.filter(t=>!t.recur);
   const total = visible.length;
   const pending = visible.filter(t=>t.status!=='Completed').length;
   const overdue = visible.filter(t=>t.status!=='Completed' && t.deadline && t.deadline < now).length;
@@ -385,6 +389,9 @@ function render(){
 
   try{ refreshTitleOptions(); }catch(e){}
   try{ refreshClientOptions(); }catch(e){}
+
+  // 🔵 If GST modal is open, refresh its view
+  try { if (document.getElementById('gstModal')?.classList.contains('active')) renderGstModal(); } catch(e){}
 }
 function formatMonthLabel(m){
   const [y, mo] = m.split('-').map(Number);
@@ -789,7 +796,102 @@ document.addEventListener('DOMContentLoaded', ()=>{
   render();
   try{ refreshTitleOptions(); refreshClientOptions(); updateDatalist('titleList', getAllTitles()); updateDatalist('clientList', getAllClients()); initCombo('fTitleNew','fTitle','titleList'); initCombo('fClientNew','fClient','clientList'); }catch(e){}
   startRealtime();
-});
+
+  /* 🔵 Inject "GST" button (left of Add Task) + Modal skeleton (reuses existing .modal styles) */
+  try {
+    const addBtn = document.getElementById('addTaskBtn');
+
+    // 1) Reuse existing GST button if present in HTML; otherwise create it.
+    let gstBtn = document.getElementById('gstBtn');
+    if (addBtn && !gstBtn) {
+      gstBtn = document.createElement('button');
+      gstBtn.className = 'btn icon';
+      gstBtn.id = 'gstBtn';
+      gstBtn.textContent = '🧾 GST';
+      addBtn.parentNode.insertBefore(gstBtn, addBtn);
+    }
+
+    // 2) Reuse existing GST modal if present in HTML; otherwise create it.
+    let gstModalEl = document.getElementById('gstModal');
+    if (!gstModalEl) {
+      const m = document.createElement('div');
+      m.id = 'gstModal';
+      m.className = 'modal';
+      m.innerHTML = `
+        <div class="dialog">
+          <header><h2 id="gstModalTitle">GST – Recurring (Monthly / Quarterly)</h2></header>
+          <div class="body">
+            <div class="gst-grid">
+              <aside class="gst-clients">
+                <h3>Clients</h3>
+                <div id="gstClientList" class="gst-list"></div>
+              </aside>
+              <section class="gst-detail">
+                <h3 id="gstClientHeading">Details</h3>
+                <div id="gstClientTasks" class="gst-tasks-empty">Select a client to view tasks.</div>
+              </section>
+            </div>
+          </div>
+          <footer><button type="button" class="btn ghost" id="gstCloseBtn">Close</button></footer>
+        </div>`;
+      document.body.appendChild(m);
+
+      // minimal inline styles (kept from your original block)
+      const style = document.createElement('style');
+      style.textContent = `
+        .gst-grid{display:grid;grid-template-columns:260px 1fr;gap:12px}
+        .gst-clients,.gst-detail{background:var(--panel,#2b343a);border:1px solid var(--line,#3a4349);border-radius:12px;padding:12px}
+        .gst-clients h3,.gst-detail h3{margin:0 0 8px 0;font-size:14px;opacity:.8}
+        .gst-list{display:flex;flex-direction:column;gap:8px;max-height:60vh;overflow:auto}
+        .gst-item{display:flex;justify-content:space-between;gap:8px;padding:8px 10px;border-radius:10px;border:1px solid var(--line,#3a4349);background:var(--chip,#303a41);cursor:pointer}
+        .gst-item:hover{filter:brightness(1.1)}
+        .gst-tasks-empty{opacity:.8}
+        .gst-task{display:grid;grid-template-columns:1.2fr .6fr .6fr .6fr;gap:8px;padding:8px 10px;border:1px solid var(--line,#3a4349);border-radius:10px;background:var(--field,#313b42);margin-bottom:8px}
+        .gst-task .money{text-align:right}
+        @media (max-width:980px){.gst-grid{grid-template-columns:1fr}}
+      `;
+      document.head.appendChild(style);
+
+      gstModalEl = m;
+    }
+
+    // 3) Open/close helpers — consistent with your CSS (.modal.active shows modal)
+    const gstOpen = () => {
+      const modalEl = document.getElementById('gstModal');
+      if (!modalEl) return;
+      modalEl.classList.add('active');  // your CSS uses .modal.active { display:flex }
+      // also keep 'show' if any alt style checks it
+      modalEl.classList.add('show');
+      try { renderGstModal(); } catch(e) {}
+    };
+    const gstClose = () => {
+      const modalEl = document.getElementById('gstModal');
+      if (!modalEl) return;
+      modalEl.classList.remove('active');
+      modalEl.classList.remove('show');
+    };
+
+    // 4) 🔑 Always bind listeners, even when button/modal already existed in HTML.
+    if (gstBtn) gstBtn.addEventListener('click', gstOpen);
+
+    // Close button + backdrop (use delegation so it works for both created/HTML modal)
+    document.addEventListener('click', (e)=>{
+      if (e.target.closest('#gstCloseBtn')) { gstClose(); return; }
+      const modalEl = document.getElementById('gstModal');
+      if (modalEl && e.target === modalEl) gstClose();
+    });
+
+    // Client click handling (delegation survives re-renders)
+    document.addEventListener('click', (e)=>{
+      const item = e.target.closest('.gst-item');
+      if (!item) return;
+      const client = item.getAttribute('data-client');
+      if (client) try { renderGstModal(client); } catch(e){}
+    });
+  } catch(e) {
+    console.error('GST UI inject/bind failed', e);
+  }}
+);
 
 /* =========================
    CREATE INVOICE FEATURE
@@ -1429,5 +1531,89 @@ $('#exportCsvBtn')?.addEventListener('click', ()=>{
     setupCombos(); setTimeout(setupCombos, 120);
   }
 })();
+
+/* =========================
+   🔵 GST AREA (Recurring tasks only: Monthly / Quarterly)
+   - Client list (left) → click → recurring tasks for that client (right)
+   - Injected via JS; no changes needed to your HTML/CSS files
+   ========================= */
+function recurringInstances(){ return tasks.filter(t => t.recur && t.period); }
+function clientsWithRecurring(){
+  const set = new Set(recurringInstances().map(t => String(t.client||'').trim()).filter(Boolean));
+  return [...set].sort((a,b)=>a.localeCompare(b));
+}
+function renderGstModal(selectedClient){
+  const listEl  = document.getElementById('gstClientList');
+  const detailEl = document.getElementById('gstClientTasks');
+  const headEl  = document.getElementById('gstClientHeading');
+  if(!listEl || !detailEl || !headEl) return;
+
+  const clients = clientsWithRecurring();
+  listEl.innerHTML = clients.map(c=>{
+    const count = recurringInstances().filter(t=>t.client===c).length;
+    return `<div class="gst-item" data-client="${esc(c)}">
+              <span class="name">${esc(c)}</span>
+              <span class="count">(${count})</span>
+            </div>`;
+  }).join('') || '<div class="gst-tasks-empty">No recurring GST clients yet.</div>';
+
+  listEl.querySelectorAll('.gst-item').forEach(it=>{
+    it.onclick = () => renderGstModal(it.dataset.client);
+  });
+
+  if (!selectedClient){
+    headEl.textContent = 'Details';
+    detailEl.className = 'gst-tasks-empty';
+    detailEl.innerHTML = 'Select a client to view tasks.';
+    return;
+  }
+
+  headEl.textContent = selectedClient;
+  const items = recurringInstances()
+    .filter(t=>t.client===selectedClient)
+    .sort((a,b)=> (a.deadline||'').localeCompare(b.deadline||''));
+
+  if (!items.length){
+    detailEl.className = 'gst-tasks-empty';
+    detailEl.textContent = 'No recurring tasks.';
+    return;
+  }
+
+  detailEl.className = '';
+  detailEl.innerHTML = items.map(t=>{
+    const out = (Number(t.fee||0) - Number(t.advance||0));
+    const badge = t.recurQuarterly
+      ? `<span class="badge recurring" title="Recurring quarterly">Quarterly</span>`
+      : `<span class="badge recurring" title="Recurring monthly">Monthly</span>`;
+
+    // Same option sets your main grid uses:
+    const statusOpts = ['Not Started','In Progress','Waiting Client','On Hold','Completed']
+      .map(s=>`<option ${s===t.status?'selected':''}>${s}</option>`).join('');
+
+    const invoiceOpts = ['Not Raised','Sent','Paid','Partially Paid']
+      .map(s=>`<option ${s===(t.invoiceStatus||'Not Raised')?'selected':''}>${s}</option>`).join('');
+
+    return `
+      <div class="gst-task" data-id="${esc(t.id)}" title="${esc(t.notes||'')}">
+        <div><strong>${esc(t.title||'')}</strong> ${badge}</div>
+        <div>${fmtDateDDMMYYYY(t.deadline)||''}</div>
+        <div class="money">₹ ${fmtMoney(t.fee||0)}</div>
+        <div class="money">₹ ${fmtMoney(out)}</div>
+        <div>
+          <select class="status" onchange="changeStatus('${esc(t.id)}', this.value)">
+            ${statusOpts}
+          </select>
+        </div>
+        <div>
+          <select class="status" onchange="changeInvoiceStatus('${esc(t.id)}', this.value)">
+            ${invoiceOpts}
+          </select>
+        </div>
+        <div>
+          <button class="btn ghost" onclick="editTask('${esc(t.id)}')">Edit</button>
+        </div>
+      </div>`;
+  }).join('');
+}
 
 
