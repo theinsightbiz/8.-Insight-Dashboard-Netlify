@@ -1009,6 +1009,13 @@ $('#downloadPdfBtn')?.addEventListener('click', () => {
     return;
   }
 
+  // 1. Determine the invoice name and store the original page title
+  const invoiceTitle = ($('#invNumber').value || 'Invoice').replace(/[^\w\-]+/g, '_');
+  const originalTitle = document.title;
+
+  // 2. Set parent page title so the browser print engine embeds this title into the PDF metadata
+  document.title = invoiceTitle;
+
   // Create an isolated sandbox iframe
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
