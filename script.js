@@ -1009,14 +1009,10 @@ $('#downloadPdfBtn')?.addEventListener('click', () => {
     return;
   }
 
-  // 1. Determine the invoice name and store the original page title
   const invoiceTitle = ($('#invNumber').value || 'Invoice').replace(/[^\w\-]+/g, '_');
   const originalTitle = document.title;
-
-  // 2. Set parent page title so the browser print engine embeds this title into the PDF metadata
   document.title = invoiceTitle;
 
-  // Create an isolated sandbox iframe
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
   iframe.style.right = '0';
@@ -1028,50 +1024,202 @@ $('#downloadPdfBtn')?.addEventListener('click', () => {
 
   const doc = iframe.contentWindow.document;
 
-  // Extract inline CSS only and strip external web fonts (Inter) to keep file under 80 KB
-  const styles = Array.from(document.querySelectorAll('style'))
-    .map(el => el.outerHTML)
-    .join('\n');
-
   doc.open();
   doc.write(`
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <title></title>
-        <link rel="stylesheet" href="style.css">
-        ${styles}
+        <title>${invoiceTitle}</title>
         <style>
-          /* 1. margin: 0 on @page automatically strips the URL, date, and page number headers */
           @page {
             size: A4 portrait;
             margin: 0 !important;
           }
-
-          /* 2. System fonts bypass heavy TTF/WOFF font-file embedding (keeps size ~50-80 KB) */
-          *, body, .a4 {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
-            box-sizing: border-box !important;
+          * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
           }
-
           html, body {
-            background: #fff !important;
-            color: #000 !important;
             margin: 0 !important;
             padding: 0 !important;
+            background: #fff !important;
+            color: #000 !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
-
-          /* 3. Handle actual printable margins internally on the container */
           .a4 {
-            width: 210mm !important;
-            min-height: 297mm !important;
-            margin: 0 auto !important;
-            padding: 14mm 14mm !important;
-            box-shadow: none !important;
-            border: none !important;
+            width: 210mm;
+            min-height: 297mm;
+            padding: 12mm 14mm;
+            margin: 0 auto;
+            background: #fff;
+          }
+          .inv-letterhead {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            border-bottom: 2px solid #000;
+            padding-bottom: 8px;
+            margin-bottom: 10px;
+          }
+          .lh-left {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+          }
+          .inv-letterhead img {
+            height: 48px;
+            width: auto;
+            object-fit: contain;
+          }
+          .firm-name {
+            font-weight: 800;
+            font-size: 16px;
+            color: #000;
+          }
+          .firm-sub {
+            font-size: 10.5px;
+            color: #333;
+            line-height: 1.35;
+          }
+          .lh-right {
+            text-align: right;
+          }
+          .tax-invoice {
+            font-weight: 800;
+            font-size: 18px;
+            color: #000;
+          }
+          .inv-meta {
+            font-size: 11.5px;
+            margin-top: 4px;
+            line-height: 1.4;
+          }
+          .inv-billto {
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 8px 10px;
+            margin-bottom: 12px;
+          }
+          .box-title {
+            font-size: 10.5px;
+            color: #000;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: .5px;
+            margin-bottom: 6px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 3px;
+          }
+          .bt-grid {
+            display: grid;
+            grid-template-columns: 3fr 1fr;
+            gap: 8px;
+            font-size: 11.5px;
+            line-height: 1.45;
+          }
+          .bt-grid > div:nth-child(2) {
+            text-align: right;
+            font-weight: 700;
+          }
+          .bt-grid .money.big {
+            font-size: 18px;
+            font-weight: 800;
+            text-align: right;
+            margin-top: 4px;
+          }
+          .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 12px 0;
+          }
+          .inv-table th, .inv-table td {
+            border: 1px solid #333;
+            padding: 6px 8px;
+            font-size: 11.5px;
+            vertical-align: middle;
+          }
+          .inv-table thead th {
+            background-color: #f2f4f7 !important;
+            font-weight: 700;
+            text-align: left;
+          }
+          .inv-table thead th:first-child {
+            width: 55px !important;
+            text-align: center;
+            white-space: nowrap;
+          }
+          .inv-table tbody td:first-child {
+            text-align: center;
+          }
+          .inv-table thead th:last-child,
+          .inv-table td.money,
+          .inv-table th.money {
+            text-align: right;
+            width: 130px;
+            white-space: nowrap;
+          }
+          .inv-table tfoot th {
+            background-color: #fafbfc !important;
+          }
+          .inv-table .right {
+            text-align: right;
+          }
+          .inv-table tfoot tr.total th {
+            font-size: 12.5px;
+            font-weight: 800;
+          }
+          .inv-table .words {
+            font-size: 11px;
+            background: #fff;
+            padding: 6px 8px;
+          }
+          .inv-banking {
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 8px 10px;
+            margin: 10px 0;
+          }
+          .bank-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 4px 16px;
+            font-size: 11px;
+            line-height: 1.4;
+          }
+          .inv-terms {
+            border: 1px solid #333;
+            border-radius: 4px;
+            padding: 8px 10px;
+            margin-top: 10px;
+          }
+          .inv-terms ol {
+            margin: 4px 0 0 16px;
+            padding: 0;
+            font-size: 11px;
+            line-height: 1.4;
+          }
+          .inv-note {
+            margin-top: 8px;
+            font-size: 10.5px;
+            color: #333;
+            font-style: italic;
+          }
+          .inv-sign {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            margin-top: 24px;
+            text-align: right;
+          }
+          .inv-sign .sign-name {
+            font-weight: 700;
+            font-size: 12px;
+          }
+          .inv-sign .sign-title {
+            font-size: 11px;
+            color: #333;
           }
         </style>
       </head>
@@ -1082,14 +1230,23 @@ $('#downloadPdfBtn')?.addEventListener('click', () => {
   `);
   doc.close();
 
-  // Wait for the iframe DOM to finish layout before printing
-  iframe.contentWindow.focus();
-  setTimeout(() => {
+  // Wait for the logo image to fully load in the iframe before printing
+  const printWhenReady = () => {
+    iframe.contentWindow.focus();
     iframe.contentWindow.print();
     setTimeout(() => {
+      document.title = originalTitle;
       document.body.removeChild(iframe);
     }, 1000);
-  }, 300);
+  };
+
+  const iframeImg = doc.querySelector('img');
+  if (iframeImg && !iframeImg.complete) {
+    iframeImg.onload = () => setTimeout(printWhenReady, 100);
+    iframeImg.onerror = () => setTimeout(printWhenReady, 100);
+  } else {
+    setTimeout(printWhenReady, 250);
+  }
 });
 
 function bindInvoicePreview(){
