@@ -229,9 +229,47 @@ select optgroup,
 }
 
 /* Print */
-@media print{
-  body{background:#fff}
-  .a4{box-shadow:none}
+@media print {
+  /* 1. Hide the main app, modals, sidebars, and dark backgrounds */
+  body, html {
+    background: #fff !important;
+    color: #000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #appRoot,
+  .modal,
+  .controls,
+  header,
+  footer {
+    display: none !important;
+  }
+
+  /* 2. Position the invoice container cleanly on the page */
+  #invoiceA4 {
+    position: static !important;
+    visibility: visible !important;
+    left: 0 !important;
+    top: 0 !important;
+    display: block !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+  }
+
+  .a4 {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    width: 100% !important;
+    min-height: auto !important;
+  }
+
+  /* 3. Force clean print sizing */
+  @page {
+    size: A4 portrait;
+    margin: 12mm 14mm;
+  }
 }
 
 /* 🔵 Add Task button */
@@ -1534,7 +1572,6 @@ select optgroup,
   }
   #gstModal .gst-col-title{ grid-column: 1 / -1; }
 }
-
 
 
 

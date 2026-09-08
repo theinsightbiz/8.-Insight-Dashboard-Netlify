@@ -1000,46 +1000,89 @@ function toIndianWords(num){
   return (out.trim() || 'Zero') + ' Rupees';
 }
 
-/* ---------- Lightweight PDF Export (~300 KB) ---------- */
-// Uses html2canvas -> JPEG (quality 0.85) + jsPDF A4; avoids huge PNGs.
-$('#downloadPdfBtn')?.addEventListener('click', async ()=>{
+$('#downloadPdfBtn')?.addEventListener('click', () => {
   bindInvoicePreview();
 
-  const page = document.querySelector('.a4');
-  const holder = el('invoiceA4');
-  if (!page || !holder) { alert('Invoice preview area not found.'); return; }
+  const invoiceEl = document.querySelector('#invoiceA4 .a4');
+  if (!invoiceEl) {
+    alert('Invoice template not found.');
+    return;
+  }
 
-  // Show for capture
-  holder.style.visibility = 'visible';
-  holder.style.left = '0';
-  holder.style.top = '0';
-  holder.style.position = 'fixed';
+  // Create an isolated sandbox iframe
+  const iframe = document.createElement('iframe');
+  iframe.style.position = 'fixed';
+  iframe.style.right = '0';
+  iframe.style.bottom = '0';
+  iframe.style.width = '0';
+  iframe.style.height = '0';
+  iframe.style.border = '0';
+  document.body.appendChild(iframe);
 
-  const scale = 2;  // good balance of sharpness and size
-  const canvas = await html2canvas(page, {
-    scale,
-    useCORS: true,
-    backgroundColor: '#FFFFFF',
-    logging: false
-  });
+  const doc = iframe.contentWindow.document;
 
-  // JPEG instead of PNG to shrink size dramatically
-  const imgData = canvas.toDataURL('image/jpeg', 0.85);
+  // Extract inline CSS only and strip external web fonts (Inter) to keep file under 80 KB
+  const styles = Array.from(document.querySelectorAll('style'))
+    .map(el => el.outerHTML)
+    .join('\n');
 
-  const pdf = new jspdf.jsPDF('p','mm','a4');
-  const pageWidth = pdf.internal.pageSize.getWidth();
-  const imgWidth = pageWidth;
-  const imgHeight = canvas.height * imgWidth / canvas.width;
+  doc.open();
+  doc.write(`
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title></title>
+        <link rel="stylesheet" href="style.css">
+        ${styles}
+        <style>
+          /* 1. margin: 0 on @page automatically strips the URL, date, and page number headers */
+          @page {
+            size: A4 portrait;
+            margin: 0 !important;
+          }
 
-  pdf.addImage(imgData, 'JPEG', 0, 0, imgWidth, imgHeight);
+          /* 2. System fonts bypass heavy TTF/WOFF font-file embedding (keeps size ~50-80 KB) */
+          *, body, .a4 {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif !important;
+            box-sizing: border-box !important;
+          }
 
-  const name = `${($('#invNumber').value||'Invoice').replace(/[^\w\-]+/g,'_')}.pdf`;
-  pdf.save(name);
+          html, body {
+            background: #fff !important;
+            color: #000 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
 
-  // Hide again
-  holder.style.visibility = 'hidden';
-  holder.style.left = '-9999px';
-  holder.style.top = '-9999px';
+          /* 3. Handle actual printable margins internally on the container */
+          .a4 {
+            width: 210mm !important;
+            min-height: 297mm !important;
+            margin: 0 auto !important;
+            padding: 14mm 14mm !important;
+            box-shadow: none !important;
+            border: none !important;
+          }
+        </style>
+      </head>
+      <body>
+        ${invoiceEl.outerHTML}
+      </body>
+    </html>
+  `);
+  doc.close();
+
+  // Wait for the iframe DOM to finish layout before printing
+  iframe.contentWindow.focus();
+  setTimeout(() => {
+    iframe.contentWindow.print();
+    setTimeout(() => {
+      document.body.removeChild(iframe);
+    }, 1000);
+  }, 300);
 });
 
 function bindInvoicePreview(){
